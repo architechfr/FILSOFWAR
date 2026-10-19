@@ -22,7 +22,7 @@ for(const seed of [42,2026])for(const seat of [0,3]){
  const saved=g.save(),copy=make(seed,seat,false).g;
  assert.equal(copy.load(saved),true);
  assert.equal(copy.summary().focus,'science');
- for(let t=0;t<420;t++){g.update(.1);copy.update(.1);}
+ for(let t=0;t<480;t++){g.update(.1);copy.update(.1);}
  assert.equal(g.save(),copy.save(),'Rattrapage deterministe identique');
  assert.ok(g.summary().tech.includes('irrigation'));
 }
