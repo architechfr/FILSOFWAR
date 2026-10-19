@@ -35,8 +35,8 @@ let target=new THREE.Vector3(995,0,875),yaw=-.55,pitch=.96,distance=720;
 let desiredTarget=target.clone(),desiredYaw=yaw,desiredPitch=pitch,desiredDistance=distance;
 let cameraTouched=false,moving=false;
 const lookups=new Map(),colors={
- ruffes:'#ae6249',causse:'#aba494',garrigue:'#879b69',riverside:'#83ab7e',
- prairie:'#94ad6c',vignes:'#9cac69',coast:'#d1c49b',sea:'#499bb1'
+ foret:'#476b45',ruffes:'#a85742',causse:'#9a9787',garrigue:'#78895d',riverside:'#6f9870',
+ prairie:'#8fa75f',vignes:'#879a55',coast:'#c7ba8f',sea:'#3f8fa8'
 };
 const featureFlags={labels:true,trees:true,roads:true,resources:true};
 const RESOURCE_ZONES=[
@@ -78,6 +78,7 @@ function elevation(x,z){
  const gorges=geo.landmark('gorges');
  const lodeve=geo.landmark('lodeve');
  let h=r+
+   // Reliefs localisés : le reste du continent garde de larges respirations.
    peak(x,z,sl.x,sl.z,215,sxLen(230),szLen(215))+
    peak(x,z,gorges.x-sxLen(40),gorges.z-szLen(100),95,sxLen(160),szLen(190))+
    peak(x,z,lodeve.x-sxLen(40),lodeve.z-szLen(65),115,sxLen(230),szLen(250))+
@@ -85,8 +86,13 @@ function elevation(x,z){
    peak(x,z,sx(360),sz(750),76,sxLen(245),szLen(200))+
    peak(x,z,sx(1250),sz(470),54,sxLen(220),szLen(180))+
    peak(x,z,sx(730),sz(1020),39,sxLen(160),szLen(140));
+ // Grandes plaines jouables : on rabaisse volontairement le bruit de fond.
+ const plainA=Math.hypot((x-sx(950))/sxLen(720),(z-sz(1180))/szLen(390));
+ const plainB=Math.hypot((x-sx(1370))/sxLen(760),(z-sz(940))/szLen(420));
+ const flatten=Math.max(0,1-Math.min(plainA,plainB));
+ h=mix(h,8+6*(noise(x,z,sxLen(240),905)-.5),flatten*.66);
  const coastalDist=sea-z;
- if(coastalDist<185)h*=smooth(clamp(coastalDist/185,0,1))*.67+ .05;
+ if(coastalDist<sxLen(185))h*=smooth(clamp(coastalDist/sxLen(185),0,1))*.67+.05;
  if(isLake(x,z))return -12;
  if(nearLake(x,z)<1.8){
    const valley=smooth(clamp((nearLake(x,z)-.95)/.85,0,1));
@@ -155,7 +161,10 @@ function lakeShape(){
  g.computeVertexNormals();return g;
 }
 function createWater(){
- const lakeMaterial=new THREE.MeshPhysicalMaterial({color:0x4b9b9c,roughness:.24,metalness:.04,transparent:true,opacity:.88,side:THREE.DoubleSide});
+ const lakeMaterial=new THREE.MeshPhysicalMaterial({
+  color:0x3f8799,roughness:.18,metalness:.02,transparent:true,opacity:.92,side:THREE.DoubleSide,
+  clearcoat:.25,clearcoatRoughness:.32
+ });
  const lakeMesh=new THREE.Mesh(lakeShape(),lakeMaterial);scene.add(lakeMesh);
  const seaShape=new THREE.Shape();
  seaShape.moveTo(0,worldH());seaShape.lineTo(worldW(),worldH());
@@ -164,7 +173,10 @@ function createWater(){
  const seaGeo=new THREE.ShapeGeometry(seaShape,12);
  seaGeo.rotateX(Math.PI/2); // x-axis maps to x, 2D y becomes z
  // Due rotateX, yShape -> zShape, positive rotation produces positive z.
- const sea=new THREE.Mesh(seaGeo,new THREE.MeshPhysicalMaterial({color:0x2c91ad,roughness:.35,metalness:0,transparent:true,opacity:.88,side:THREE.DoubleSide}));
+ const sea=new THREE.Mesh(seaGeo,new THREE.MeshPhysicalMaterial({
+  color:0x327f98,roughness:.28,metalness:0,transparent:true,opacity:.9,side:THREE.DoubleSide,
+  clearcoat:.18
+ }));
  sea.position.y=-3;scene.add(sea);
  // L'Hérault doit être un repère géographique majeur, pas un filet décoratif.
  ribbon(geo.river,14,'#4f9eb4',-1.7);
@@ -329,6 +341,50 @@ function createVineyards(){
   dummy.scale.setScalar(.7+random(p.x|0,p.z|0,2)*.45);dummy.rotation.y=.25;dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
  }
  mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);natureObjects.push(mesh);
+}
+
+function createLandscapeDetails(){
+ const rockGeo=new THREE.DodecahedronGeometry(5,0);
+ const rockMat=new THREE.MeshStandardMaterial({color:'#8f8a7c',roughness:1});
+ const scrubGeo=new THREE.IcosahedronGeometry(3.6,0);
+ const scrubMat=new THREE.MeshLambertMaterial({color:'#65784c',flatShading:true});
+ const grassMat=new THREE.MeshLambertMaterial({color:'#7d9654'});
+ const grassGeo=new THREE.ConeGeometry(.7,4.5,4);
+ const dummy=new THREE.Object3D();
+ const rocks=[],scrubs=[],grass=[];
+ let attempt=0;
+ while(attempt<4300){
+  const x=random(attempt,1501,17)*worldW(),z=random(attempt,1503,23)*worldH(),region=geo.region(x,z);attempt++;
+  if(geo.isSea(x,z)||isLake(x,z)||geo.riverDistance(x,z)<sxLen(18))continue;
+  if(region==='causse'||region==='ruffes'||region==='garrigue'){
+   const chance=region==='causse'?.58:region==='ruffes'?.34:.22;
+   if(random(x|0,z|0,1504)<chance&&rocks.length<650)rocks.push({x,z});
+  }else if(region==='prairie'||region==='vignes'){
+   if(random(x|0,z|0,1505)<.16&&grass.length<900)grass.push({x,z});
+  }
+  if((region==='garrigue'||region==='riverside')&&random(x|0,z|0,1506)<.24&&scrubs.length<500) scrubs.push({x,z});
+ }
+ function inst(list,geoObj,mat,y,scaleMin,scaleMax){
+  const mesh=new THREE.InstancedMesh(geoObj,mat,list.length);
+  list.forEach((p,i)=>{const sc=scaleMin+random(i,p.x|0,1701)*(scaleMax-scaleMin);
+   dummy.position.set(p.x,safeH(p.x,p.z)+y*sc,p.z);dummy.rotation.y=random(i,p.z|0,1702)*6.28;
+   dummy.scale.set(sc,sc,sc);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});
+  mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);natureObjects.push(mesh);
+ }
+ inst(rocks,rockGeo,rockMat,2.7,.6,1.6);
+ inst(scrubs,scrubGeo,scrubMat,2.5,.7,1.35);
+ inst(grass,grassGeo,grassMat,1.5,.7,1.3);
+}
+function createClearings(){
+ const mat=new THREE.MeshBasicMaterial({color:'#92a968',transparent:true,opacity:.16,depthWrite:false});
+ const zones=[
+  {x:sx(980),z:sz(1180),rx:sxLen(310),rz:szLen(170)},
+  {x:sx(1370),z:sz(950),rx:sxLen(260),rz:szLen(155)}
+ ];
+ for(const q of zones){
+  const g=new THREE.CircleGeometry(1,64);g.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(g,mat);m.scale.set(q.rx,1,q.rz);m.position.set(q.x,safeH(q.x,q.z)+.35,q.z);scene.add(m);
+ }
 }
 function createDam(){
  const cx=geo.lake.x,cz=geo.lake.z;
@@ -534,15 +590,16 @@ async function main(){
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
  renderer.setClearColor(new THREE.Color('#b4cad0'));
- scene=new THREE.Scene();scene.background=new THREE.Color('#b4cad0');scene.fog=new THREE.FogExp2('#bfd1ca',.00056);
+ scene=new THREE.Scene();scene.background=new THREE.Color('#b6c5c2');
+ scene.fog=new THREE.FogExp2('#c4cec8',.00031);
  camera=new THREE.PerspectiveCamera(50,1,1,12000);
- scene.add(new THREE.HemisphereLight(0xe0efff,0x5e7356,2.0));
- const sun=new THREE.DirectionalLight(0xfff0c9,2.5);sun.position.set(-550,1100,-420);scene.add(sun);
+ scene.add(new THREE.HemisphereLight(0xe5edf0,0x66704e,1.75));
+ const sun=new THREE.DirectionalLight(0xffe8bd,2.15);sun.position.set(-850,1350,-520);scene.add(sun);
  createTerrain();
  setProgress('Ajout du lac, du barrage, du fleuve et des ponts…',50);
  createWater();createBridges();createDam();createRoads();
  setProgress('Peuplement des villages, vignobles et forêts…',74);
- const countTrees=createForest();createVineyards();createResourceZones();
+ const countTrees=createForest();createVineyards();createResourceZones();createLandscapeDetails();createClearings();
  setProgress('Placement des 31 lieux géographiques…',92);
  createLandmarkPins();drawMini();
  const frameKeys=controller();
@@ -550,7 +607,7 @@ async function main(){
   renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();}
  addEventListener('resize',resize);resize();
  $('info').textContent='31 sites géographiques, '+countTrees.toLocaleString('fr-FR')+
-  ' arbres 3D regroupés en massifs, Hérault, ponts et zones naturelles. Continent vierge : aucun village préconstruit. Les 31 lieux servent de repères géographiques.';
+  ' arbres 3D regroupés en massifs, Hérault, ponts, clairières, causses, garrigues et zones naturelles. Continent vierge : aucun village préconstruit. Les 31 lieux servent de repères géographiques.';
  setProgress('Bienvenue dans les Terres des Sales Fils.',100);
  setTimeout(()=>{loading.style.display='none'},330);
  flyTo('campagnan');
