@@ -35,7 +35,7 @@ function create(world,nav,opts){
  var recruitment=[],captureProgress=Array.from({length:8},function(){return new Float32Array(256)});
  var visible=Array.from({length:8},function(){return new Uint8Array(256)});
  var discovered=Array.from({length:8},function(){return new Uint8Array(256)});
- var nextVisibility=0;
+ var tickCount=0;
  function rand(){seedRand=(Math.imul(seedRand,1664525)+1013904223)>>>0;return seedRand/4294967296;}
  function log(text,seat){events.unshift({t:Math.round(clock),text,seat:seat==null?-1:seat});events.length=Math.min(events.length,45);}
  function owned(seat){return people.filter(function(u){return u.owner===seat&&u.hp>0});}
@@ -169,49 +169,126 @@ function create(world,nav,opts){
   (ids||[]).forEach(function(id){var r=destination(id,x,z,task);if(r.ok){ok++;result.push(r)}else failed.push(r.error);});
   return {ok:ok>0,accepted:ok,failed:failed.slice(0,3),results:result};
  }
- function attack(seat,attacker,target){
-  if(clock-attacker.attackTick<2.2)return;
+ function lineOfSight(attacker,target){
+  if(attacker.type!=='archer')return true;
+  var distance=dist(attacker,target),n=Math.max(2,Math.ceil(distance/12));
+  var a=world.heightAt(attacker.x,attacker.z)+2.4,b=world.heightAt(target.x,target.z)+1.8;
+  for(var i=1;i<n;i++){
+   var t=i/n,x=attacker.x+(target.x-attacker.x)*t,z=attacker.z+(target.z-attacker.z)*t;
+   var c=world.cellAt(x,z);
+   if(c.kind===1||c.kind===2)return false;
+   if(c.height>Math.max(a,b)+8)return false;
+  }
+  return true;
+ }
+ function attack(attacker,target){
+  if(clock-attacker.attackTick<2.1)return;
   attacker.attackTick=clock;
-  var dmg=TYPES[attacker.type].atk,home=world.capitals[target.owner];
-  var slopeHigh=world.heightAt(attacker.x,attacker.z)-world.heightAt(target.x,target.z);
-  if(slopeHigh>10)dmg=Math.round(dmg*1.16);
-  var defenderSector=sectors[nearestSector(target.x,target.z)];
-  if(defenderSector.owner===target.owner&&buildings.some(function(b){return b.owner===target.owner&&b.sector===defenderSector.id&&b.type==='outpost'}))
-    dmg=Math.round(dmg*.8);
+  var dmg=TYPES[attacker.type].atk;
+  var relativeHeight=world.heightAt(attacker.x,attacker.z)-world.heightAt(target.x,target.z);
+  if(relativeHeight>10)dmg=Math.round(dmg*1.18);
+  else if(relativeHeight< -13)dmg=Math.round(dmg*.88);
+  var defender=sectors[nearestSector(target.x,target.z)];
+  if(defender.owner===target.owner&&buildings.some(function(b){
+   return b.complete&&b.owner===target.owner&&b.sector===defender.id&&b.type==='outpost';
+  }))dmg=Math.max(1,Math.round(dmg*.70));
   target.hp-=Math.max(1,dmg);
   if(target.hp<=0){
-   log(civs[attacker.owner].name+' vainc une unite de '+civs[target.owner].name,attacker.owner);
-   if(attacker.owner===player)log('+10 filsous : victoire au combat',player),civs[player].resources.gold+=10;
+   log(civs[attacker.owner].name+' terrasse une unite de '+civs[target.owner].name+'.',attacker.owner);
+   civs[attacker.owner].resources.gold+=5;
+   civs[attacker.owner].score+=4;
   }
  }
  function fight(){
-  var alive=people.filter(function(u){return u.hp>0});
-  for(var i=0;i<alive.length;i++){
-   var u=alive[i],best=null,d=Infinity;
-   for(var j=0;j<alive.length;j++){
-    var v=alive[j];if(u.owner===v.owner)continue;
-    var dd=md2(u,v);if(dd<d){d=dd;best=v;}
+  var live=people.filter(function(u){return u.hp>0}),buckets=new Map(),dim=72;
+  for(var i=0;i<live.length;i++){
+   var u=live[i],key=Math.floor(u.x/dim)+','+Math.floor(u.z/dim);
+   if(!buckets.has(key))buckets.set(key,[]);
+   buckets.get(key).push(u);
+  }
+  for(var i=0;i<live.length;i++){
+   var a=live[i],range=TYPES[a.type].range,limit=range*range,choice=null,best=limit;
+   var xx=Math.floor(a.x/dim),zz=Math.floor(a.z/dim);
+   var cells=Math.ceil(range/dim);
+   for(var dz=-cells;dz<=cells;dz++)for(var dx=-cells;dx<=cells;dx++){
+    var group=buckets.get((xx+dx)+','+(zz+dz));if(!group)continue;
+    for(var j=0;j<group.length;j++){
+     var b=group[j];
+     if(b.owner===a.owner||b.hp<=0)continue;
+     var d=md2(a,b);
+     if(d<best&&lineOfSight(a,b)){best=d;choice=b;}
+    }
    }
-   if(best&&d<12*12)attack(u.owner,u,best);
+   if(choice)attack(a,choice);
   }
   people=people.filter(function(u){return u.hp>0});
-  civs.forEach(function(f){f.units=owned(f.seat).length});
+  civs.forEach(function(f){f.units=owned(f.seat).length;});
  }
- function capture(unit){
-  var sect=nearestSector(unit.x,unit.z),s=sectors[sect];
-  if(s.owner===unit.owner)return;
-  if(unit.type==='worker')return;
-  var f=civs[unit.owner],near=sectors.some(function(t){
-   return t.owner===unit.owner&&
-     (Math.abs(t.id%16-sect%16)+Math.abs(Math.floor(t.id/16)-Math.floor(sect/16))<=1);
-  });
-  if(!near)return;
-  var enemies=people.filter(function(u){return u.owner!==unit.owner&&u.hp>0&&nearestSector(u.x,u.z)===sect});
-  if(enemies.length)return;
-  var previous=s.owner;s.owner=unit.owner;
-  log(f.name+' revendique le secteur '+world.sectors[sect].label+'.',unit.owner);
-  if(previous===-1){f.resources.gold+=3;f.score+=10;}
-  else {f.score+=25;civs[previous].score=Math.max(0,civs[previous].score-15);}
+ function isAdjacent(seat,id){
+  var col=id%16,row=Math.floor(id/16);
+  var adj=[col>0?id-1:-1,col<15?id+1:-1,row>0?id-16:-1,row<15?id+16:-1];
+  for(var k=0;k<4;k++)if(adj[k]>=0&&sectors[adj[k]].owner===seat)return true;
+  return false;
+ }
+ function conquest(delta){
+  // L'occupation se construit dans le temps. Territoire frontalier seulement.
+  var occupiers=Array.from({length:256},function(){return new Map();});
+  for(var i=0;i<people.length;i++){
+   var u=people[i];
+   if(u.hp<=0||u.type==='worker'||u.route)continue;
+   var id=nearestSector(u.x,u.z),m=occupiers[id];
+   m.set(u.owner,(m.get(u.owner)||0)+1);
+  }
+  for(var id=0;id<256;id++){
+   var m=occupiers[id],owner=sectors[id].owner;
+   if(m.size!==1){
+    for(var seat=0;seat<8;seat++)captureProgress[seat][id]=Math.max(0,captureProgress[seat][id]-delta*1.5);
+    continue;
+   }
+   var pair=m.entries().next().value,seat=pair[0],troops=pair[1];
+   if(seat===owner||!isAdjacent(seat,id)){
+    for(var t=0;t<8;t++)captureProgress[t][id]=Math.max(0,captureProgress[t][id]-delta*.5);
+    continue;
+   }
+   var isCapital=world.capitals.some(function(c){return c.sector===id});
+   var threshold=owner<0?12:isCapital?48:25;
+   if(isCapital&&troops<3)continue; // une capitale ne tombe pas au premier eclaireur
+   var defense=buildings.some(function(b){return b.owner===owner&&b.sector===id&&b.complete&&b.type==='outpost';});
+   var rate=Math.min(2.2,1+(troops-1)*.25)*(defense?.53:1);
+   captureProgress[seat][id]+=delta*rate;
+   for(var e=0;e<8;e++)if(e!==seat)captureProgress[e][id]=Math.max(0,captureProgress[e][id]-delta*1.5);
+   if(captureProgress[seat][id]<threshold)continue;
+   sectors[id].owner=seat;
+   for(var f=0;f<8;f++)captureProgress[f][id]=0;
+   var conquering=civs[seat],previous=owner;
+   conquering.score+=previous<0?10:30;
+   conquering.resources.gold+=previous<0?5:18;
+   if(previous>=0){civs[previous].score=Math.max(0,civs[previous].score-12);}
+   log(conquering.name+' conquiert le secteur '+world.sectors[id].label+'.',seat);
+   if(isCapital&&previous>=0){civs[previous].alive=false;log('La capitale de '+civs[previous].name+' est tombee !',seat);}
+  }
+ }
+ function visibility(){
+  for(var p=0;p<8;p++)visible[p].fill(0);
+  function unveil(seat,x,z,radius){
+   var minX=cap(Math.floor((x-radius)/128),0,15),maxX=cap(Math.floor((x+radius)/128),0,15);
+   var minZ=cap(Math.floor((z-radius)/128),0,15),maxZ=cap(Math.floor((z+radius)/128),0,15);
+   for(var r=minZ;r<=maxZ;r++)for(var c=minX;c<=maxX;c++){
+    var tx=c*128+64,tz=r*128+64;
+    if(Math.hypot(tx-x,tz-z)<=radius+75){
+     visible[seat][r*16+c]=1;discovered[seat][r*16+c]=1;
+    }
+   }
+  }
+  for(var i=0;i<people.length;i++){
+   var u=people[i];if(u.hp>0)unveil(u.owner,u.x,u.z,u.type==='scout'?235:u.type==='archer'?170:145);
+  }
+  for(var j=0;j<buildings.length;j++){
+   var b=buildings[j];if(b.complete)unveil(b.owner,b.x,b.z,b.type==='outpost'?230:170);
+  }
+  for(var k=0;k<sectors.length;k++)if(sectors[k].owner>=0){
+   visible[sectors[k].owner][k]=1;discovered[sectors[k].owner][k]=1;
+  }
  }
  function stepUnits(delta){
   for(var i=0;i<people.length;i++){
@@ -220,7 +297,7 @@ function create(world,nav,opts){
     var goal=u.route[u.way],d=dist(u,goal),spd=TYPES[u.type].speed*delta;
     if(d<spd+1){u.x=goal.x;u.z=goal.z;u.way++;}
     else{var a=spd/d;u.x+=(goal.x-u.x)*a;u.z+=(goal.z-u.z)*a;}
-    if(u.way>=u.route.length){u.route=null;u.way=0;capture(u);if(u.task==='move')u.task='idle';}
+    if(u.way>=u.route.length){u.route=null;u.way=0;if(u.task==='move')u.task='idle';}
    }
    if(u.task==='gather'&&u.type==='worker'&&u.gatherSector>=0&&!u.route){
     var s=sectors[u.gatherSector],f=civs[u.owner];
@@ -285,15 +362,17 @@ function create(world,nav,opts){
  }
  function update(delta){
   delta=cap(delta||0,0,.5);dt+=delta;
-  if(dt<.05)return;
-  var n=0;
-  while(dt>=.05&&n<12){
-   dt-=.05;clock+=.05;n++;
+  var loops=0;
+  while(dt>=.05-1e-8&&loops<12){
+   dt-=.05;loops++;tickCount++;clock=Math.round(tickCount*5)/100;
    stepUnits(.05);
-   if(Math.floor(clock*2)!==Math.floor((clock-.05)*2))fight();
-   if(Math.floor(clock*4)!==Math.floor((clock-.05)*4))economy(.25);
-   if(aiEnabled)for(var i=0;i<8;i++)if(i!==player&&civs[i].aiNext<=clock){
-    aiThink(i);civs[i].aiNext=clock+16+rand()*8;
+   if(tickCount%10===0){fight();conquest(.5);}
+   if(tickCount%5===0){economy(.25);construction(.25);training(.25);}
+   if(tickCount%20===0)visibility();
+   if(aiEnabled&&tickCount%5===0){
+    for(var i=0;i<8;i++)if(i!==player&&civs[i].aiNext<=clock){
+     aiThink(i);civs[i].aiNext=clock+16+rand()*8;
+    }
    }
   }
  }
