@@ -166,7 +166,7 @@ function apply(id,fn){el(id).addEventListener('click',function(){if(!game)return
 function needed(){return game&&game.summary().home;}
 function sel(){return game&&game.people().find(function(u){return u.id===selected&&u.owner===game.player})}
 function homeSector(){return game&&game.summary().home&&game.summary().home.sector;}
-for(var i=0;i<8;i++){var option=document.createElement('option');option.value=i;option.textContent=(i+1)+' · '+FOW_WORLD8.generate(2026).capitals[i].name;el('seat').appendChild(option);}
+var sampleCapitals=FOW_WORLD8.generate(2026).capitals;for(var i=0;i<8;i++){var option=document.createElement('option');option.value=i;option.textContent=(i+1)+' · '+sampleCapitals[i].name;el('seat').appendChild(option);}
 el('new').addEventListener('click',function(){if(confirm('Créer une nouvelle carte et abandonner la partie active ?')){localStorage.removeItem('fow8-save');setup();}});
 el('start').addEventListener('click',function(){if(!started){error(game.found());started=!!game.summary().home;el('seat').disabled=started;refresh();render();}});
 el('seat').addEventListener('change',function(){localStorage.removeItem('fow8-save');setup();});
