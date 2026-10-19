@@ -10,6 +10,18 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 const WIDTH=5120,HEIGHT=3584;
+const ZONES=[
+ {id:'forest-nw',type:'foret',x:.12,z:.20,rx:.22,rz:.22},
+ {id:'forest-sw',type:'foret',x:.12,z:.74,rx:.20,rz:.24},
+ {id:'salagou-w',type:'ruffes',x:.23,z:.25,rx:.18,rz:.17},
+ {id:'salagou-e',type:'ruffes',x:.36,z:.26,rx:.18,rz:.17},
+ {id:'campagnan-n',type:'prairie',x:.46,z:.36,rx:.23,rz:.20},
+ {id:'campagnan-s',type:'vignes',x:.45,z:.76,rx:.27,rz:.20},
+ {id:'herault-mid',type:'riverside',x:.59,z:.56,rx:.18,rz:.26},
+ {id:'herault-n',type:'riverside',x:.67,z:.46,rx:.18,rz:.23},
+ {id:'causses-ne',type:'causse',x:.80,z:.18,rx:.22,rz:.22},
+ {id:'causses-se',type:'causse',x:.79,z:.76,rx:.24,rz:.24}
+].map(z=>({...z,x:z.x*WIDTH,z:z.z*HEIGHT,rx:z.rx*WIDTH,rz:z.rz*HEIGHT}));
 function clamp(n,a,b){return Math.min(b,Math.max(a,n));}
 function create(spec){
  const b=spec.world.bounds;
@@ -63,19 +75,22 @@ function create(spec){
  function region(x,z){
   if(isSea(x,z))return 'sea';
   if(coastZ(x)-z<115)return 'coast';
-  const sal=lake&&Math.hypot((x-lake.x)/2.5,(z-lake.z)/1.75);
-  if(sal<285)return 'ruffes';
-  // Les seuils sont proportionnels a l'ancienne carte, pas des nouveaux centres artificiels.
-  if(x>3300&&z<2275)return 'garrigue';
-  if(z<1120)return 'causse';
-  if(z>1785&&x>1625&&x<3725)return 'vignes';
-  if(riverDistance(x,z)<150)return 'riverside';
-  if(x<1550&&z>1960)return 'causse';
-  return 'prairie';
+  if(riverDistance(x,z)<155)return 'riverside';
+  const sal=lake&&Math.hypot((x-lake.x)/(WIDTH/8.2),(z-lake.z)/(HEIGHT/8.4));
+  if(sal<1.0)return 'ruffes';
+  let best='prairie',score=Infinity;
+  for(const q of ZONES){
+    const dx=(x-q.x)/q.rx,dz=(z-q.z)/q.rz,d=dx*dx+dz*dz;
+    if(d<score){score=d;best=q.type;}
+  }
+  if(best==='foret')return 'foret';
+  if(best==='causse'&&score>1.65)return 'garrigue';
+  if(best==='riverside'&&score>1.45)return 'prairie';
+  return best;
  }
  return {
    spec,sites,byId,river,roads,coast,xy,geo,coastZ,isSea,riverDistance,region,lake,important,towns,
-   bounds:b,worldWidth:WIDTH,worldHeight:HEIGHT,worldSize:WIDTH,landmark
+   bounds:b,worldWidth:WIDTH,worldHeight:HEIGHT,worldSize:WIDTH,zones:ZONES.map(z=>({...z})),landmark
  };
 }
 return Object.freeze({VERSION:'v0.9-large-continent',WIDTH,HEIGHT,create});
