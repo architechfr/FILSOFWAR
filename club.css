@@ -1,0 +1,154 @@
+/* FILS OF WAR au Club (18/10) : le blason de Florian, le salon du reseau, le bandeau. */
+.fow-logo{display:block;width:auto;height:min(34vh,250px);aspect-ratio:1;margin:0 auto 4px;filter:drop-shadow(0 8px 22px #000a)}
+.fow-logo+.wordmark{display:none}
+.menu-content{overflow-y:auto;scrollbar-width:none}
+.menu-content::-webkit-scrollbar{display:none}
+
+html.reseau .difficulty,html.reseau #start,html.reseau .menu-description{display:none!important}
+#fow-net{margin:4px 0 0;display:flex;flex-direction:column;gap:9px}
+.fn-titre{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:750;letter-spacing:2.2px;color:var(--gold-light)}
+.fn-titre i{font-style:normal;font-size:8px;letter-spacing:1.4px;padding:3px 7px;border:1px solid #c2a46a70;border-radius:3px;color:#d8c08c}
+.fn-etat{margin:0;font-size:11px;color:#b5b4a8}
+.fn-liste{display:flex;flex-direction:column;gap:7px}
+.fn-salon{display:grid;grid-template-columns:1fr auto;align-items:center;text-align:left;padding:11px 14px;background:#75623b29;border:1px solid #c2a46a60;color:var(--ink)}
+.fn-salon b{font-size:13px;letter-spacing:.5px}
+.fn-salon small{grid-column:1;font-size:9px;color:#b9b19a;margin-top:3px}
+.fn-salon .arrow{grid-row:1/3;grid-column:2;font-size:22px;color:var(--gold-light)}
+.fn-vide,.fn-attente{margin:0;font-size:11px;line-height:1.6;color:#a39f8f}
+.fn-attente{color:var(--gold-light)}
+.fn-attente:before{content:'';display:inline-block;width:7px;height:7px;margin-right:8px;border-radius:50%;background:#e3c995;animation:fn-pouls 1.2s ease-in-out infinite}
+@keyframes fn-pouls{50%{opacity:.25}}
+.fn-fermer{align-self:flex-start;font-size:10px;letter-spacing:1px;color:#c9b58c;text-decoration:underline;padding:4px 0}
+.fn-note{margin:2px 0 0;font-size:10px;line-height:1.6;color:#8f9386}
+
+#fn-bandeau{position:fixed;z-index:60;left:50%;top:calc(var(--hud-height) + 10px);transform:translateX(-50%);max-width:min(560px,92vw);
+  padding:9px 14px;border:1px solid #c2a46a70;border-radius:4px;background:rgba(18,25,25,.95);color:var(--ink);font-size:12px;line-height:1.45;text-align:center;box-shadow:0 6px 22px #0007}
+#fn-bandeau[data-grave]{border-color:#c4614f;color:#f3d2c8}
+#fn-bandeau button{margin-left:6px;padding:3px 9px;border:1px solid #c2a46a70;border-radius:3px;color:var(--gold-light);font-size:11px}
+
+/* ---- LE TELEPHONE A L'HORIZONTALE (18/10) ------------------------------
+   Florian, capture d'iPhone a l'appui : « il faut améliorer la vue sur
+   téléphone ». Sur 414 px de haut, le panneau du bas en prenait 146, la
+   fiche d'objectif 162, la minicarte 172 : il restait un quart de l'ecran
+   pour le royaume. Et Safari regonflait en paysage des textes que le jeu
+   avait descendus a 5-6 px. Ici : on replie au lieu de rapetisser, des
+   textes de 9 px au moins, une seule ligne en bas, rien du tout en bas
+   quand rien n'est choisi. Tout est sous #hud pour passer devant les regles
+   d'origine (claude/fow/extraire-fow.py n'y touche pas). */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html.sans-plein-ecran #fullscreen,html.sans-plein-ecran #menu-fullscreen{display:none!important}
+@media (orientation:landscape) and (max-height:500px){
+  html:root{--hud-height:40px;--map-size:86px;--tray-height:82px}   /* html:root passe devant les :root du jeu, ecrits apres nous */
+  #hud .topbar{height:40px;padding:0 max(8px,env(safe-area-inset-right)) 0 max(8px,env(safe-area-inset-left));gap:8px}
+  #hud .hud-brand .small-crest{width:22px;height:27px;font-size:17px}
+  #hud .hud-brand>span:last-child{display:none}
+  #hud .resource-strip{gap:12px}
+  #hud .resource{gap:4px}
+  #hud .resource svg{width:17px;height:17px}
+  #hud .resource strong{font-size:13px}
+  #hud .resource>div>span{display:none}
+  #hud .resource>small{font-size:9px}
+  #hud .resource.population{padding-left:10px}
+  #hud .resource.population strong{font-size:12px}
+  #hud .time-box strong{font-size:11px}
+  #hud .time-box span{display:none}
+  #hud .topbar .icon-button{width:32px;height:32px}
+  #hud .topbar .icon-button svg{width:15px;height:15px}
+
+  /* La fiche d'objectif : une etiquette repliee (telephone.js la replie au depart). */
+  #hud .objective-panel{left:8px;top:46px;width:auto;max-width:240px;padding:7px 10px}
+  #hud .objective-panel:before{top:8px;height:14px}
+  #hud #objective-toggle{gap:10px}
+  #hud .objective-panel .eyebrow{font-size:9px;letter-spacing:1.2px}
+  #hud #objective-body{width:220px;max-height:calc(100vh - 150px);overflow-y:auto}
+  #hud .objective-panel h2{font-size:15px;margin:7px 0 4px}
+  #hud .objective-panel p{font-size:11px;line-height:1.45}
+  #hud .objective-progress{margin:7px 0 5px}
+  #hud .guide-action{font-size:10px}
+
+  /* A droite : le zoom se fait en pincant, il reste l'aide (et le plein ecran s'il existe). */
+  #hud .camera-controls{right:8px;top:46px;gap:5px}
+  #hud .camera-controls .icon-button{width:32px;height:32px;font-size:17px}
+  #hud .camera-controls svg{width:14px;height:14px}
+  html.tactile #hud #zoom-in,html.tactile #hud #zoom-out{display:none}
+
+  /* La minicarte, sans titre ni legende ; l'atlas en pastille sur son coin. */
+  #hud .minimap-panel{left:max(8px,env(safe-area-inset-left));bottom:8px;width:var(--map-size);padding:3px}
+  #hud .minimap-heading,#hud .minimap-legend{display:none}
+  #hud #minimap{display:block;width:100%;height:auto}
+  #hud .atlas-button{position:absolute;top:-34px;left:0;width:32px;min-height:30px;height:30px;margin:0;padding:0;border:1px solid #c1a86e55;background:#172221f5;font-size:0;gap:0}
+  #hud .atlas-button svg{width:16px;height:16px}
+  #hud .atlas-button kbd{display:none}
+
+  /* Les raccourcis, en pastilles au-dessus du panneau. */
+  #hud .selection-shortcuts{left:calc(var(--map-size) + 16px);bottom:calc(var(--tray-height) + 14px);gap:5px;flex-wrap:nowrap}
+  #hud .selection-shortcuts button{min-height:30px;padding:4px 8px;gap:5px;font-size:10px}
+  #hud .selection-shortcuts svg{width:15px;height:15px}
+  #hud .selection-shortcuts b{font-size:10px;padding-left:5px}
+
+  /* Le panneau du bas, sur une ligne : qui, puis ses ordres qui defilent. */
+  #hud .selection-panel{left:calc(var(--map-size) + 16px);right:max(8px,env(safe-area-inset-right));bottom:8px;min-height:0;height:var(--tray-height);display:flex;padding:6px 30px 6px 8px;gap:8px;align-items:stretch}
+  #hud .selection-info{width:150px;min-width:130px;max-width:150px;height:auto;margin:0;gap:7px;padding-right:8px;border-right:1px solid var(--line)}
+  #hud .portrait{width:34px;height:42px;flex:0 0 34px}
+  #hud .portrait svg{width:22px;height:26px}
+  #hud .unit-info{min-width:0}
+  #hud .unit-info .eyebrow{display:block;font-size:8px;letter-spacing:.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #hud .unit-info h3{font-size:13px;margin:2px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #hud .unit-info p{font-size:9px;line-height:1.3;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #hud .health-track{margin-top:3px}
+  #hud .health-numbers{font-size:8px}
+  #hud .action-area{flex:1;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;align-items:stretch;gap:5px;padding:0;scroll-snap-type:x proximity}
+  #hud .action-area .panel-description{flex:0 0 220px;font-size:10px;line-height:1.4;align-self:center}
+  #hud .action-card,#hud .action-card.small-card{flex:0 0 70px;width:70px;min-height:0;height:auto;padding:4px 3px;gap:1px;flex-direction:column;flex-wrap:nowrap;scroll-snap-align:start}
+  #hud .action-card.age-action{flex-basis:96px;width:96px}
+  #hud .action-card svg,#hud .action-card.small-card>svg{width:16px;height:16px}
+  #hud .action-card .action-note{font-size:8px;line-height:1.1;color:#a9a48f}
+  #hud .action-card{overflow:hidden}
+  #hud .action-card strong,#hud .action-card.small-card strong,#hud .action-card.age-action strong{font-size:9px;line-height:1.15}
+  #hud .action-card .cost,#hud .action-card.small-card .cost{font-size:8px;gap:3px;width:auto;min-height:0}
+  #hud .action-card .cost svg{width:9px!important;height:9px!important}
+  #hud .action-card .badge{font-size:7px}
+  #hud .close-selection{top:2px;right:2px;width:26px;height:26px}
+  #hud .selection-hint{display:none}
+  /* Rien de choisi : plus de panneau, juste la consigne en une ligne. */
+  #hud .selection-panel:has(#action-area>.panel-description:only-child){height:auto;padding:5px 10px;background:rgba(18,25,25,.82)}
+  #hud .selection-panel:has(#action-area>.panel-description:only-child) :is(#selection-info,#action-area,.close-selection){display:none}
+  #hud .selection-panel:has(#action-area>.panel-description:only-child) .selection-hint{display:block;position:static;height:auto;min-height:0;padding:0;border:0;font-size:10px;line-height:1.35;color:#c9c3ad;background:none}
+  #hud:has(#action-area>.panel-description:only-child) .selection-shortcuts{bottom:44px}
+
+  /* Le menu : le blason a gauche, les commandes a droite, tout visible sans defiler. */
+  #menu .menu-header{height:44px;padding:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left))}
+  #menu .version-tag{padding:5px 9px}
+  #menu .map-title{display:none}
+  #menu .menu-content{width:auto;max-width:none;margin:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));padding:0;
+    display:grid;grid-template-columns:auto minmax(0,400px);column-gap:28px;align-content:center;justify-content:center;overflow-y:auto}
+  #menu .menu-content>*{grid-column:2}
+  #menu .menu-content>.fow-logo{grid-column:1;grid-row:1/span 9;align-self:center;height:min(62vh,210px);margin:0}
+  #menu .ornament,#menu .menu-description{display:none}
+  #menu .tagline{font-size:19px;margin:0 0 8px}
+  #menu .difficulty{margin-bottom:8px}
+  #menu .difficulty button{padding:8px 10px;font-size:10px}
+  #menu .difficulty button span{font-size:9px;margin-top:3px}
+  #menu .start-region-label{margin-bottom:8px}
+  #menu .start-button{height:46px;min-height:46px}
+  #menu .menu-secondary{margin-top:8px}
+  #menu .menu-footer{height:34px}
+  #menu #fow-net{gap:6px;margin:0}
+  #menu .fn-note{display:none}
+}
+
+/* 18/10 : « je n'arrive pas à basculer » -- le bouton qui couche l'écran (telephone.js). */
+#portrait-hint .fow-paysage{margin-top:30px;padding:14px 22px;border:1px solid #c2a46a;border-radius:3px;background:#75623b55;color:var(--gold-light);font-size:13px;letter-spacing:1px}
+#portrait-hint .fow-paysage+#ignore-portrait{margin-top:14px}
+
+/* 18/10 : la sauvegarde (sauvegarde.js) -- le bouton du menu et le voile de la reprise. */
+.fow-cache{display:none!important}
+#fow-reprendre{margin-bottom:10px;flex-wrap:wrap;height:auto!important;row-gap:2px}
+#fow-reprendre .fr-titre{flex:1 1 auto;text-align:left}
+#fow-reprendre .fr-detail{order:3;flex:1 1 100%;text-align:left;font-size:10px;letter-spacing:.6px;font-weight:500;opacity:.8;margin-top:3px}
+#fow-reprise{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center,#2d3a2fee,#111a19f5)}
+#fow-reprise .fr-boite{display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;padding:24px;max-width:340px;color:var(--ink)}
+#fow-reprise b{font:24px var(--serif);color:var(--gold-light)}
+#fow-reprise .fr-texte{font-size:12px;line-height:1.6;color:#b5c0ae}
+#fow-reprise .fr-barre{width:240px;height:6px;border-radius:3px;background:#ffffff1a;overflow:hidden}
+#fow-reprise .fr-barre i{display:block;height:100%;width:0;background:var(--gold-light);transition:width .2s}
