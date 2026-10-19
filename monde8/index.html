@@ -8,7 +8,7 @@ header{padding:18px max(18px,3vw);display:flex;justify-content:space-between;ali
 .brand{font-family:Georgia,serif;font-weight:800;letter-spacing:2px;font-size:21px}.brand span{color:#e3c17a}header small{display:block;font:11px system-ui;letter-spacing:2px;color:#a8c3ad;text-transform:uppercase}
 a{color:#d7bc7a}main{display:grid;grid-template-columns:minmax(300px,1fr) 330px;gap:20px;padding:22px max(14px,3vw);max-width:1500px;margin:auto}
 .visual{background:#15201a;border:1px solid #997d4a75;border-radius:10px;padding:12px;min-width:0}
-canvas{width:100%;height:auto;aspect-ratio:1;display:block;background:#273a2e;border-radius:5px;cursor:crosshair;touch-action:manipulation}
+canvas{width:100%;height:auto;aspect-ratio:5/3;display:block;background:#273a2e;border-radius:5px;cursor:crosshair;touch-action:manipulation}
 aside{display:flex;flex-direction:column;gap:13px}.panel{border:1px solid #997d4a55;background:#1d2824;padding:15px;border-radius:10px}
 h1,h2{font-family:Georgia,serif;margin:0 0 10px}h1{font-size:26px}h2{font-size:18px}p{color:#b7c2b8;margin:4px 0 12px}
 label{display:block;font-size:12px;color:#c5ba9d;margin-bottom:5px}input,select,button{width:100%;border:1px solid #b69a6659;border-radius:5px;background:#101a17;color:#f5e6c5;font:inherit;padding:10px 11px;min-height:43px}
@@ -24,13 +24,13 @@ button{background:#c6a766;color:#1e241c;font-weight:750;cursor:pointer}button:ho
 <header><div class="brand"><span>F</span> FILS OF WAR <small>Laboratoire continent · 8 joueurs</small></div><div><span class="pill">Bêta géographique · moteur historique préservé</span>　<a href="../">Retour au jeu actuel</a></div></header>
 <main>
 <section class="visual" aria-label="Carte d'altitude du monde huit joueurs">
- <canvas id="atlas" width="1024" height="1024"></canvas>
+ <canvas id="atlas" width="1280" height="768"></canvas>
  <p class="banner" id="loading">Génération du continent…</p>
  <p class="muted">Clique un territoire ou une capitale pour lire l'altitude et les possibilités de déplacement. Les grands sommets et les fleuves restent des obstacles stratégiques. Ce laboratoire ne démarre pas encore une partie à huit joueurs.</p>
 </section>
 <aside>
  <section class="panel"><h1>Un continent, huit royaumes</h1>
- <p>Terrain <strong>2048 × 2048</strong>, découpé en <strong>256 secteurs</strong> et <strong>1024 parcelles de 64 × 64</strong> pour les futurs chargements progressifs.</p>
+ <p>Terrain <strong>2560 × 1536</strong>, découpé en <strong>240 secteurs</strong> et <strong>960 parcelles de 64 × 64</strong> pour les futurs chargements progressifs.</p>
  <label for="seed">Graine du monde</label>
  <div class="control"><input id="seed" inputmode="numeric" value="2026" aria-label="Graine"><button id="generate">Générer</button></div>
  <p class="muted">Une graine identique génère toujours les mêmes reliefs et les mêmes positions.</p></section>
@@ -48,7 +48,7 @@ button{background:#c6a766;color:#1e241c;font-weight:750;cursor:pointer}button:ho
  <label><input type="checkbox" id="bridges" checked> Ponts et rivière</label>
  </div></section>
  <section class="panel"><h2>État du monde</h2><div class="metrics">
- <div><strong>8</strong><span>Capitales</span></div><div><strong>256</strong><span>Secteurs</span></div>
+ <div><strong>8</strong><span>Capitales</span></div><div><strong>240</strong><span>Secteurs</span></div>
  <div><strong id="max-height">—</strong><span>Altitude maximale</span></div>
  <div><strong id="checksum">—</strong><span>Empreinte du terrain</span></div>
  </div><p class="muted" id="reaches">Analyse des déplacements en attente…</p></section>
@@ -60,7 +60,7 @@ button{background:#c6a766;color:#1e241c;font-weight:750;cursor:pointer}button:ho
 <script>
 (function(){
 'use strict';
-var api=window.FOW_WORLD8,canvas=document.querySelector('#atlas'),ctx=canvas.getContext('2d',{alpha:false}),W=512,D=1024;
+var api=window.FOW_WORLD8,canvas=document.querySelector('#atlas'),ctx=canvas.getContext('2d',{alpha:false}),PX=640,PZ=384,DW=1280,DH=768;
 var world=null,img=null,pixels=null,seedInput=document.querySelector('#seed');
 var view=document.querySelector('#view'),flag=['sectors','spawns','names','bridges'].map(function(s){return document.querySelector('#'+s)});
 function rgb(c){return 'rgb('+c[0]+','+c[1]+','+c[2]+')'}
@@ -86,16 +86,16 @@ function color(c,x,z,mode){
 }
 function render(){
   if(!world)return;
-  var m=view.value,raw=ctx.createImageData(W,W);
-  for(var iz=0;iz<W;iz++)for(var ix=0;ix<W;ix++){
-    var x=ix*4+2,z=iz*4+2,c=color(0,x,z,m),k=(iz*W+ix)*4;
+  var m=view.value,raw=ctx.createImageData(PX,PZ);
+  for(var iz=0;iz<PZ;iz++)for(var ix=0;ix<PX;ix++){
+    var x=ix*4+2,z=iz*4+2,c=color(0,x,z,m),k=(iz*PX+ix)*4;
     raw.data[k]=c[0];raw.data[k+1]=c[1];raw.data[k+2]=c[2];raw.data[k+3]=255;
   }
-  var off=document.createElement('canvas');off.width=W;off.height=W;
+  var off=document.createElement('canvas');off.width=PX;off.height=PZ;
   off.getContext('2d').putImageData(raw,0,0);
-  ctx.imageSmoothingEnabled=true;ctx.drawImage(off,0,0,D,D);
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(off,0,0,DW,DH);
   if(flag[0].checked){ctx.strokeStyle='rgba(250,225,183,.22)';ctx.lineWidth=1;
-   for(var q=1;q<16;q++){var a=q*64;ctx.beginPath();ctx.moveTo(a,0);ctx.lineTo(a,D);ctx.moveTo(0,a);ctx.lineTo(D,a);ctx.stroke();}}
+   for(var q=1;q<20;q++){var a=q*64;ctx.beginPath();ctx.moveTo(a,0);ctx.lineTo(a,DH);ctx.stroke();}for(var r=1;r<12;r++){var b=r*64;ctx.beginPath();ctx.moveTo(0,b);ctx.lineTo(DW,b);ctx.stroke();}}
   if(flag[3].checked){
    // Traits routiers traversant la riviere aux passages existants.
    for(var b=0;b<api.BRIDGES.length;b++){var z=api.BRIDGES[b],x=world.riverX?world.riverX(z):world.landmarks[0].x;
@@ -114,7 +114,7 @@ function render(){
    }}
 }
 function info(x,z){
- var v=world.cellAt(x,z),sec=world.sectors[Math.floor(z/128)*16+Math.floor(x/128)];
+ var v=world.cellAt(x,z),sec=world.sectors[Math.floor(z/128)*20+Math.floor(x/128)];
  var names={0:'Terre ferme',1:'Lac',2:'Rivière',3:'Pont'};
  var c=world.capitals.find(function(c){return Math.hypot(c.x-x,c.z-z)<42});
  var html='<b>'+ (c?'Royaume '+(c.seat+1)+' · '+c.name:'Secteur '+sec.label)+'</b>';
@@ -129,17 +129,17 @@ function build(){
   try{
    world=api.generate(seed);
    document.querySelector('#max-height').textContent=world.peak.toFixed(0);
-   document.querySelector('#checksum').textContent=world.checksum;
+   document.querySelector('#checksum').textContent=world.checksum;document.querySelector('#loading').dataset.flat=Math.round(world.flatRatio*100);
    var foot=world.reachable('infanterie'),tank=world.reachable('blindes');
    document.querySelector('#reaches').textContent='Capitales accessibles à pied : '+foot.accessible.filter(Boolean).length+'/8. En blindé, avant routes : '+tank.accessible.filter(Boolean).length+'/8.';
-   document.querySelector('#loading').textContent='Monde généré · graine '+world.seed+' · 8 capitales';
+   document.querySelector('#loading').textContent='Monde généré · graine '+world.seed+' · 8 capitales · '+Math.round(world.flatRatio*100)+' % de terrain doux';
    render();info(world.capitals[0].x,world.capitals[0].z);
   }catch(err){document.querySelector('#loading').textContent='Erreur de génération : '+String(err.message);}
  },20);});
 }
 document.querySelector('#generate').addEventListener('click',build);
 view.addEventListener('change',render);flag.forEach(function(el){el.addEventListener('change',render)});
-canvas.addEventListener('click',function(e){if(!world)return;var rc=canvas.getBoundingClientRect();info((e.clientX-rc.left)*2048/rc.width,(e.clientY-rc.top)*2048/rc.height);});
+canvas.addEventListener('click',function(e){if(!world)return;var rc=canvas.getBoundingClientRect();info((e.clientX-rc.left)*2560/rc.width,(e.clientY-rc.top)*1536/rc.height);});
 build();
 })();
 </script></body></html>
