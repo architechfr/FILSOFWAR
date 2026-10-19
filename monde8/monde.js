@@ -205,7 +205,7 @@ function generate(value){
   for(var i=0;i<HH.length;i+=23)checksum=Math.imul(checksum^HH[i],16777619);
   for(var i=0;i<water.length;i+=17)checksum=Math.imul(checksum^water[i],16777619);
   return {seed,size:SIZE,step:STEP,chunk:CHUNK,sectors,capitals,landmarks:LANDMARKS.slice(),
-    biomeColors:BIOMES,heightMap:HH,water,slope,cellAt,heightAt:at,canTraverse,reachable,
+    biomeColors:BIOMES,heightMap:HH,water,slope,riverX:function(z){return riverX(z,lc,seed)},cellAt,heightAt:at,canTraverse,reachable,
     peak:peakHeight/10,waterCells:flood,checksum:(checksum>>>0).toString(16)};
 }
 return Object.freeze({VERSION:'0.1',SIZE,STEP,CHUNK,SECTOR,PLAYERS,BIOMES,
