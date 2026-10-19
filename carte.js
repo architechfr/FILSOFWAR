@@ -33,11 +33,11 @@
            [-1,0],[-.9239,-.3827],[-.7071,-.7071],[-.3827,-.9239],[0,-1],[.3827,-.9239],[.7071,-.7071],[.9239,-.3827]];
   // Ce que chaque terroir pousse : [type, bouquets, par bouquet, quantite, rayon].
   var POUSSES={
-    foret:  [['wood',3,6,420,1.8],['food',1,2,500,1.7],['stone',1,1,700,2.0],['gold',1,1,500,1.7]],
-    prairie:[['food',2,2,620,1.8],['wood',1,4,480,1.8],['stone',1,1,700,2.0],['gold',1,1,500,1.7]],
-    causses:[['stone',2,2,900,2.1],['gold',1,2,700,1.7],['wood',1,3,450,1.8],['food',1,1,500,1.7]],
-    ruffes: [['gold',2,2,650,1.7],['stone',1,2,750,2.0],['wood',2,3,450,1.8],['food',1,1,500,1.7]],
-    rives:  [['wood',2,5,450,1.8],['food',1,3,550,1.8],['stone',1,1,700,2.0],['gold',1,1,500,1.7]]
+    foret:  [['wood',2,9,420,1.8],['food',1,4,500,1.7],['stone',1,2,700,2.0],['gold',1,1,500,1.7]],
+    prairie:[['food',1,6,620,1.8],['wood',1,6,480,1.8],['stone',1,2,700,2.0],['gold',1,1,500,1.7]],
+    causses:[['stone',1,5,900,2.1],['gold',1,3,700,1.7],['wood',1,5,450,1.8],['food',1,3,500,1.7]],
+    ruffes: [['gold',1,5,650,1.7],['stone',1,4,750,2.0],['wood',1,7,450,1.8],['food',1,3,500,1.7]],
+    rives:  [['wood',1,8,450,1.8],['food',1,5,550,1.8],['stone',1,2,700,2.0],['gold',1,1,500,1.7]]
   };
   var NOMS_HAMEAUX={foret:'Hameau des Bûcherons',prairie:'Hameau des Bergers',causses:'Hameau des Carriers',ruffes:'Hameau des Orpailleurs',rives:'Hameau des Pêcheurs'};
   var TROUPEAUX={foret:[4,5],prairie:[6,7],causses:[2,3],ruffes:[3,4],rives:[4,5]};
@@ -397,6 +397,11 @@
       r+=w*tA.r;g+=w*tA.g;b+=w*tA.b;
     }
     base.r=r;base.g=g;base.b=b;
+    var GP=window.FOW_GEO_PLAYABLE,SL=GP&&GP.byId&&GP.byId.salagou;
+    if(SL){
+      var ds=Math.hypot(x-SL.x,z-SL.z),ks=1-lisse(72,132,ds);
+      if(ks>0)base.lerp(tA.setHex(0xa54b36),ks*.86);
+    }
     return base;
   }
   function herbe(x,z,game){return dominant(game,x,z).herbe;}
@@ -471,6 +476,17 @@
       if(M[i]>-.4){var km=lisse(-.35,.15,M[i]);hh=hh*(1-km)+(-.6)*km;}
       if(F[i]>-.15){var kf=lisse(-.06,.22,F[i]);hh+=kf*(6.5+2.2*vn(xg,zg,7,g+5));}
       H[i]=hh;
+    }
+    // Derniere passe : l'Herault reste un cours d'eau continu, jamais enseveli par une colline.
+    if(riverFn){
+      for(var rz0=0;rz0<HN;rz0++)for(var rx0=0;rx0<HN;rx0++){
+        var wx0=rx0*2,wz0=rz0*2,dr0=Math.abs(wz0-riverFn(wx0)),ii0=rz0*HN+rx0;
+        if(dr0<7)H[ii0]=Math.min(H[ii0],-.42);
+        else if(dr0<28){
+          var kv=lisse(7,28,dr0),cap=-.42+kv*8.5;
+          H[ii0]=Math.min(H[ii0],cap);
+        }
+      }
     }
     return {H:H,L:L,M:M,F:F};
   }
