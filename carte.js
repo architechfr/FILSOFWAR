@@ -82,35 +82,55 @@
      Important : assigner les biomes AVANT les ressources et les obstacles. */
   function contreesHerault(SECTORS,depart,rnd){
     var loin=SECTORS.slice().sort(function(a,b){return d2(b,depart)-d2(a,depart)||a.id-b.id;})[0];
-    var rep=[
-      {x:175,z:192,t:'ruffes'},   // terres rouges du Salagou
-      {x:275,z:197,t:'ruffes'},   // ruffes et collines autour du lac
-      {x:615,z:141,t:'causses'},  // reliefs des gorges
-      {x:606,z:578,t:'causses'},  // hauts causses
-      {x:351,z:279,t:'prairie'}, // vignes et champs de Campagnan
-      {x:344,z:585,t:'prairie'}, // plaine viticole
-      {x:452,z:430,t:'rives'},   // Belarga et berges de l'Herault
-      {x:515,z:350,t:'rives'},   // couloir de l'Herault
-      {x:92,z:156,t:'foret'},    // Campawood
-      {x:90,z:568,t:'foret'}     // foret et coteaux ouest
+    var G=window.FOW_GEO_PLAYABLE,B=G&&G.byId;
+    // Les foyers viennent des memes localisations que le continent 3D.
+    // On garde seulement un petit jitter visuel : la geographie ne change plus de partie en partie.
+    var rep=G&&B?[
+      {x:B.salagou.x,z:B.salagou.z,t:'ruffes'},
+      {x:B.clermont.x,z:B.clermont.z,t:'ruffes'},
+      {x:B.gorges.x,z:B.gorges.z,t:'causses'},
+      {x:B['saint-guilhem'].x,z:B['saint-guilhem'].z,t:'causses'},
+      {x:B.lodeve.x,z:B.lodeve.z,t:'causses'},
+      {x:B.couvertoirade.x,z:B.couvertoirade.z,t:'causses'},
+      {x:B.campagnan.x,z:B.campagnan.z,t:'prairie'},
+      {x:B.pezenas.x,z:B.pezenas.z,t:'prairie'},
+      {x:B.belarga.x,z:B.belarga.z,t:'rives'},
+      {x:B['pont-canet'].x,z:B['pont-canet'].z,t:'rives'},
+      {x:B.campawood.x,z:B.campawood.z,t:'foret'},
+      {x:B['viols-laval'].x,z:B['viols-laval'].z,t:'foret'},
+      {x:B.narbonne.x,z:B.narbonne.z,t:'prairie'},
+      {x:B.beziers.x,z:B.beziers.z,t:'prairie'},
+      {x:B.sete.x,z:B.sete.z,t:'rives'},
+      {x:B.palavas.x,z:B.palavas.z,t:'rives'}
+    ]:[
+      {x:175,z:192,t:'ruffes'},{x:275,z:197,t:'ruffes'},
+      {x:615,z:141,t:'causses'},{x:606,z:578,t:'causses'},
+      {x:351,z:279,t:'prairie'},{x:344,z:585,t:'prairie'},
+      {x:452,z:430,t:'rives'},{x:515,z:350,t:'rives'},
+      {x:92,z:156,t:'foret'},{x:90,z:568,t:'foret'}
     ];
-    // Variation moderee sans changer les grands reperes geographiques.
     for(var k=0;k<rep.length;k++){
-      rep[k].x+=(rnd()-.5)*25;
-      rep[k].z+=(rnd()-.5)*25;
+      rep[k]={x:rep[k].x+(rnd()-.5)*10,z:rep[k].z+(rnd()-.5)*10,t:rep[k].t};
     }
     var result=[];
     for(var i=0;i<SECTORS.length;i++){
-      var s=SECTORS[i];
-      if(s.id===depart.id||s.id===loin.id){result[s.id]='vallee';continue;}
+      var sec=SECTORS[i];
+      if(sec.id===depart.id||sec.id===loin.id){result[sec.id]='vallee';continue;}
       var best=Infinity,type='prairie';
       for(var r=0;r<rep.length;r++){
-        var p=rep[r],dx=s.x-p.x,dz=s.z-p.z;
-        // La riviere est un couloir vertical moins etale transversalement.
-        var d=dx*dx+(p.t==='rives'?dz*dz*.68:dz*dz);
+        var p=rep[r],dx=sec.x-p.x,dz=sec.z-p.z;
+        var d=dx*dx+dz*dz;
+        if(p.t==='rives'){
+          // L'Herault est desormais le vrai axe v0.8 du moteur.
+          var rz=G&&G.riverZ?G.riverZ(sec.x):p.z;
+          var dr=sec.z-rz;
+          d=dx*dx*.34+dr*dr*.58;
+        }
         if(d<best){best=d;type=p.t;}
       }
-      result[s.id]=type;
+      // La bande proche du fleuve gagne toujours sur les foyers voisins.
+      if(G&&G.riverZ&&Math.abs(sec.z-G.riverZ(sec.x))<78&&type!=='causses')type='rives';
+      result[sec.id]=type;
     }
     return result;
   }
@@ -454,9 +474,23 @@
     return T[i]*(1-fx)*(1-fz)+T[i+1]*fx*(1-fz)+T[i+HN]*(1-fx)*fz+T[i+HN+1]*fx*fz;
   }
   function montagneSalagou(x,z){
-    // Cretes hors du plan d'eau, avec cols et deformations reproductibles.
-    var pics=[[129,120,22,49,37],[287,121,26,44,35],[302,255,20,44,34],[101,280,18,39,47],
-              [351,89,42,54,42],[251,291,21,45,31],[71,199,22,39,42],[322,190,18,33,54]];
+    var G=window.FOW_GEO_PLAYABLE,B=G&&G.byId;
+    var pics;
+    if(B){
+      pics=[
+        [B.salagou.x-32,B.salagou.z-20,19,58,44],
+        [B.salagou.x+40,B.salagou.z+25,17,52,39],
+        [B.gorges.x-6,B.gorges.z-20,34,62,46],
+        [B['saint-guilhem'].x+18,B['saint-guilhem'].z+5,24,48,40],
+        [B.lodeve.x-8,B.lodeve.z-14,25,58,43],
+        [B.couvertoirade.x+10,B.couvertoirade.z+4,31,68,48],
+        [B['saint-pons'].x+8,B['saint-pons'].z+18,15,45,36],
+        [B.campawood.x-12,B.campawood.z-8,11,42,34]
+      ];
+    }else{
+      pics=[[129,120,22,49,37],[287,121,26,44,35],[302,255,20,44,34],[101,280,18,39,47],
+            [351,89,42,54,42],[251,291,21,45,31],[71,199,22,39,42],[322,190,18,33,54]];
+    }
     var h=0;
     for(var i=0;i<pics.length;i++){
       var p=pics[i],dx=(x-p[0])/p[3],dz=(z-p[1])/p[4],d=dx*dx+dz*dz;
@@ -464,6 +498,7 @@
     }
     return h;
   }
+
   function h(x,z){var R=relief();return R?echant(R.H,x,z):0;}
   function hBat(x,z,r){var R=relief();if(!R)return 0;var k=(r||2)*.7;return Math.min(echant(R.H,x-k,z-k),echant(R.H,x+k,z-k),echant(R.H,x-k,z+k),echant(R.H,x+k,z+k),echant(R.H,x,z));}
   function normale(x,z,out){var R=relief();if(!R){out[0]=0;out[1]=1;out[2]=0;return out;}
@@ -579,6 +614,31 @@
       ctx.beginPath();
       if(e==='pin'){ctx.moveTo(x,z-4.2);ctx.lineTo(x+2.6,z+1.6);ctx.lineTo(x-2.6,z+1.6);}else ctx.arc(x,z-1,2.5,0,6.283);
       ctx.fill();ctx.fillStyle='#4a3826';ctx.fillRect(x-.5,z+1.4,1,1.8);
+    }
+    // Les 31 reperes : memes localisations que le continent 3D.
+    var GP=window.FOW_GEO_PLAYABLE;
+    if(GP&&GP.sites){
+      var labelsGeo=[];
+      for(var gi=0;gi<GP.sites.length;gi++){
+        var gp=GP.sites[gi];if(!connu(gp.x,gp.z))continue;
+        var gx0=gp.x*SX,gz0=gp.z*SZ;
+        ctx.beginPath();
+        ctx.fillStyle=gp.kind==='pont'?'#e9c77b':gp.kind==='lac'?'#5a9ab0':gp.kind==='port'?'#7ab4c4':'#eee1bd';
+        ctx.strokeStyle='rgba(47,38,28,.8)';ctx.lineWidth=1.2;
+        ctx.arc(gx0,gz0,gp.major?2.4:1.5,0,6.283);ctx.fill();ctx.stroke();
+        if(!gp.major)continue;
+        var nomg=gp.name,fs=Math.max(8,Math.round(w/68));ctx.font='600 '+fs+'px Georgia, serif';
+        var tw=ctx.measureText(nomg).width/2+3,lx0=Math.max(tw+2,Math.min(w-tw-2,gx0)),lz0=Math.max(fs+3,Math.min(hh-4,gz0-6));
+        var clash=false;
+        for(var gl=0;gl<labelsGeo.length;gl++){var LG=labelsGeo[gl];if(Math.abs(LG[0]-lx0)<LG[2]+tw&&Math.abs(LG[1]-lz0)<fs+3){clash=true;break;}}
+        if(clash)continue;
+        labelsGeo.push([lx0,lz0,tw]);
+        ctx.lineWidth=2.5;ctx.strokeStyle='rgba(246,236,211,.88)';ctx.strokeText(nomg,lx0,lz0);
+        ctx.fillStyle='rgba(53,40,27,.94)';ctx.fillText(nomg,lx0,lz0);
+      }
+      // L'Herault porte enfin son nom sur la carte jouable.
+      var hx=430,hz=GP.riverZ?GP.riverZ(hx):384;
+      if(connu(hx,hz)){ctx.save();ctx.translate(hx*SX,hz*SZ);ctx.rotate(-.1);ctx.font='italic 700 '+Math.max(9,Math.round(w/58))+'px Georgia, serif';ctx.fillStyle='rgba(236,244,237,.9)';ctx.strokeStyle='rgba(38,70,72,.8)';ctx.lineWidth=3;ctx.strokeText("L’HÉRAULT",0,-8);ctx.fillText("L’HÉRAULT",0,-8);ctx.restore();}
     }
     // Les falaises : des hachures sombres.
     if(R)for(var f=0;f<(game.reliefs||[]).length;f++){
