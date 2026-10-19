@@ -136,9 +136,9 @@ function ruisseau(game,api,G,mask,protect){
   for(var j=0;j<ids.length;j++){
    var k=ids[j],x=(k%N)*2+1,z=Math.floor(k/N)*2+1;
    if(stamp[k]||G[k])continue;
-   if(blocked[k]&&z<api.riverZ(x)-6){ok=false;break;}
+   if(blocked[k]&&z<api.riverZ(x)-6)continue;
    // L'embouchure se raccorde a la riviere existante.
-   if(api.terrainAt(x,z)==='water'&&z<api.riverZ(x)-6){ok=false;break;}
+   if(api.terrainAt(x,z)==='water'&&z<api.riverZ(x)-6)continue;
    stamp[k]=1;added.push(k);
   }
   if(!ok)break;
