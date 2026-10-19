@@ -83,7 +83,8 @@ kbd{display:inline-block;border:1px solid #826a46;padding:1px 5px;border-radius:
 <section class="panel"><h2>Les huit royaumes</h2><div id="legend"></div><p id="score" class="muted">Choisis ton royaume.</p></section>
 <section class="panel"><h2>Chronique des conquêtes</h2><div id="events" class="list"></div></section>
 </section></main>
-<script src="monde.js"></script><script src="navigation.js"></script><script src="strategie-v2.js"></script><script src="civilisation.js"></script>
+<script src="monde.js"></script>
+<script src="zone-salagou.js"></script><script src="navigation.js"></script><script src="strategie-v2.js"></script><script src="civilisation.js"></script>
 <script>
 (function(){
 'use strict';
@@ -146,6 +147,18 @@ function render(){
   ctx.font='bold 14px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillStyle='#17221c';ctx.fillText(String(k+1),x,z);
  }
+ if(world.zoneSalagou){
+   var pts=world.zoneSalagou.points;
+   for(var pi=0;pi<pts.length;pi++){
+     var site=pts[pi],sec=site.sector;
+     if(!revealed[sec])continue;
+     ctx.fillStyle=site.resource?'#f5d577':'#f9f2d7';
+     ctx.strokeStyle='#26352c';ctx.lineWidth=2;
+     ctx.beginPath();ctx.arc(site.x/2,site.z/2,4.1,0,2*Math.PI);ctx.fill();ctx.stroke();
+   }
+   var dam=world.zoneSalagou.dam;ctx.strokeStyle='#f4e0b5';ctx.lineWidth=5;
+   ctx.beginPath();ctx.moveTo(dam.x/2-9,dam.z/2);ctx.lineTo(dam.x/2+9,dam.z/2);ctx.stroke();
+  }
  game.buildings().forEach(function(b){
   if(b.type==='townhall'||(!seen[b.sector]&&b.owner!==game.player))return;
   ctx.fillStyle=civColors[b.owner];ctx.fillRect(b.x/2-3,b.z/2-3,6,6);
@@ -201,7 +214,10 @@ function pick(e){
  else {
   var sec=game.sectors()[Math.floor(z/128)*16+Math.floor(x/128)];
   var w=world.cellAt(x,z);
-  say('Secteur '+world.sectors[sec.id].label+' · '+ (sec.owner<0?'Neutre':'Royaume '+(sec.owner+1))+' · Altitude '+w.height.toFixed(1)+' · pente '+w.slope+'°');
+  var poi=world.zoneSalagou&&world.zoneSalagou.points
+    .filter(function(p){return Math.hypot(p.x-x,p.z-z)<55;})
+    .sort(function(a,b){return Math.hypot(a.x-x,a.z-z)-Math.hypot(b.x-x,b.z-z);})[0];
+  say((poi?'✦ '+poi.name+' · ':'')+'Secteur '+world.sectors[sec.id].label+' · '+ (sec.owner<0?'Neutre':'Royaume '+(sec.owner+1))+' · Altitude '+w.height.toFixed(1)+' · pente '+w.slope+'°');
  }
  refresh();render();
 }
