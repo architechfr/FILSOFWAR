@@ -38,22 +38,25 @@ kbd{display:inline-block;border:1px solid #826a46;padding:1px 5px;border-radius:
 <div><b id="stone">0</b><small>Pierre</small></div><div><b id="gold">0</b><small>Filsous</small></div>
 </div><p id="population">0 habitants · 0 secteurs</p><div class="row"><button id="pause">⏸ Pause</button><button id="speed">×1 Vitesse</button><button id="save">Sauvegarder</button></div></section>
 <section class="panel"><h2>Commandement</h2><p class="muted">Clique un de tes personnages, puis une destination. Pour récolter, sélectionne un ouvrier dans un secteur à toi. Pour conquérir, envoie un éclaireur ou un soldat sur un secteur voisin.</p>
-<div id="inspect">Aucun personnage sélectionné.</div><div class="actions">
+<div id="inspect">Aucun personnage sélectionné.</div>
+<div id="production" class="muted" aria-live="polite"></div><div class="actions">
 <button id="found" class="primary">⚑ Fonder ma capitale</button>
 <button id="recruitWorker">✦ Recruter ouvrier<br><small>55 vivres</small></button>
 <button id="recruitScout">♞ Recruter éclaireur<br><small>75 vivres, 15 bois</small></button>
-<button id="recruitSoldier">⚔ Recruter soldat<br><small>95 vivres, 35 bois</small></button>
+<button id="recruitSoldier">⚔ Former soldat<br><small>Caserne · 27 s</small></button>
+<button id="recruitArcher">🏹 Former archer<br><small>Caserne · 32 s</small></button>
+<button id="recruitCavalry">♞ Former cavalier<br><small>Âge II · 38 s</small></button>
 <button id="gather">♧ Récolter ici</button>
 <button id="buildFarm">🌾 Créer une ferme<br><small>85 bois</small></button>
 <button id="buildSawmill">♧ Scierie<br><small>95 bois, 25 pierre</small></button>
-<button id="buildBarracks">⚔ Caserne<br><small>140 bois, 65 pierre</small></button>
+<button id="buildBarracks">⚔ Caserne<br><small>72 s · ouvriers requis</small></button>
 <button id="outpost">⌂ Avant-poste<br><small>125 bois, 45 pierre</small></button>
 <button id="upgrade">⌂ Améliorer l'Hôtel de Ville</button>
 </div><p class="status" id="status"></p></section>
 <section class="panel"><h2>Les huit royaumes</h2><div id="legend"></div><p id="score" class="muted">Choisis ton royaume.</p></section>
 <section class="panel"><h2>Chronique des conquêtes</h2><div id="events" class="list"></div></section>
 </section></main>
-<script src="monde.js"></script><script src="navigation.js"></script><script src="strategie.js"></script>
+<script src="monde.js"></script><script src="navigation.js"></script><script src="strategie-v2.js"></script>
 <script>
 (function(){
 'use strict';
@@ -101,26 +104,29 @@ function render(){
  ctx.imageSmoothingEnabled=true;ctx.drawImage(worldLayer,0,0,W,W);
  labels();
  if(game){
- var territories=game.sectors();
+ var territories=game.sectors(),fog=game.fog(game.player),revealed=fog.discovered,seen=fog.visible;
  ctx.globalAlpha=.22;
  territories.forEach(function(t){
-  if(t.owner<0)return;
+  if(t.owner<0||!revealed[t.id])return;
   ctx.fillStyle=civColors[t.owner];var s=world.sectors[t.id];
   ctx.fillRect(s.col*64,s.row*64,64,64);
  });ctx.globalAlpha=1;
  for(var k=0;k<world.capitals.length;k++){
   var c=world.capitals[k],x=c.x/2,z=c.z/2;
+  if(!revealed[c.sector])continue;
   ctx.beginPath();ctx.fillStyle=civColors[k];ctx.strokeStyle='#14261f';ctx.lineWidth=2.5;
   ctx.arc(x,z,14,0,Math.PI*2);ctx.fill();ctx.stroke();
   ctx.font='bold 14px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillStyle='#17221c';ctx.fillText(String(k+1),x,z);
  }
  game.buildings().forEach(function(b){
-  if(b.type==='townhall')return;
+  if(b.type==='townhall'||(!seen[b.sector]&&b.owner!==game.player))return;
   ctx.fillStyle=civColors[b.owner];ctx.fillRect(b.x/2-3,b.z/2-3,6,6);
   ctx.strokeStyle='#13231b';ctx.strokeRect(b.x/2-3,b.z/2-3,6,6);
  });
  game.people().forEach(function(u){
+  var sector=Math.floor(u.z/128)*16+Math.floor(u.x/128);
+  if(u.owner!==game.player&&!seen[sector])return;
   var x=u.x/2,z=u.z/2,sel=u.id===selected;
   if(sel){ctx.strokeStyle='#fffad2';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,z,sel?9:5,0,Math.PI*2);ctx.stroke();}
   ctx.fillStyle=civColors[u.owner];ctx.strokeStyle='#101e18';ctx.lineWidth=1.8;
@@ -130,6 +136,10 @@ function render(){
    u.route.slice(u.way).forEach(function(pt){ctx.lineTo(pt.x/2,pt.z/2)});ctx.stroke();ctx.setLineDash([]);
   }
  });
+  ctx.fillStyle='rgba(4,12,15,.8)';
+  for(var f=0;f<256;f++)if(!revealed[f]){var sc=world.sectors[f];ctx.fillRect(sc.col*64,sc.row*64,64,64);}
+  ctx.fillStyle='rgba(4,12,15,.40)';
+  for(var f=0;f<256;f++)if(revealed[f]&&!seen[f]){var sc=world.sectors[f];ctx.fillRect(sc.col*64,sc.row*64,64,64);}
  }
 }
 function refresh(){
@@ -144,6 +154,7 @@ function refresh(){
  el('events').innerHTML=game.events().slice(0,12).map(function(e){
   return '<div><span style="color:'+ (civColors[e.seat]||'#afafaa') +'">●</span> '+e.t+'s · '+e.text.replace(/</g,'&lt;')+'</div>';
  }).join('');
+ el('production').textContent='Recrutement : '+game.recruitment().filter(function(q){return q.owner===game.player}).map(function(q){return q.type+' '+Math.ceil(q.remaining)+'s';}).join(', ')+' · Chantiers : '+game.buildings().filter(function(b){return b.owner===game.player&&!b.complete;}).map(function(b){return b.type+' '+Math.round(b.progress*100)+'%';}).join(', ');
  el('overlay').textContent=started?'Royaume '+(game.player+1)+' · '+Math.floor(sum.clock)+' s · Sélectionner puis déplacer':'Monde 2048 × 2048 · Clique Fonder pour démarrer';
  el('found').disabled=!!sum.home;
  el('pause').textContent=paused?'▶ Reprendre':'⏸ Pause';el('speed').textContent='×'+speed+' Vitesse';
@@ -175,6 +186,8 @@ apply('found',function(){var r=game.found();started=!!game.summary().home;return
 apply('recruitWorker',function(){return game.spawn('worker')});
 apply('recruitScout',function(){return game.spawn('scout')});
 apply('recruitSoldier',function(){return game.spawn('soldier')});
+apply('recruitArcher',function(){return game.spawn('archer')});
+apply('recruitCavalry',function(){return game.spawn('cavalry')});
 apply('gather',function(){var u=sel();if(!u||u.type!=='worker')return {ok:false,error:'Sélectionne un ouvrier'};var s=game.sectors()[Math.floor(u.z/128)*16+Math.floor(u.x/128)];if(s.owner!==game.player)return {ok:false,error:'Ce terrain ne t’appartient pas'};return game.destination(u.id,u.x,u.z,'gather');});
 for(var b of [['buildFarm','farm'],['buildSawmill','sawmill'],['buildBarracks','barracks'],['outpost','outpost']]){
  (function(id,type){apply(id,function(){var u=sel(),sector=u?Math.floor(u.z/128)*16+Math.floor(u.x/128):homeSector();return game.build(type,sector);})})(b[0],b[1]);
