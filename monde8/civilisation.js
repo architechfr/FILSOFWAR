@@ -232,7 +232,17 @@
       const workers=base.people().filter(u=>u.owner===p.owner&&u.type==='worker'&&u.hp>0&&
         Math.hypot(u.x-p.x,u.z-p.z)<90).length;
       // Les villages éloignés demandent le déplacement réel d'ouvriers.
-      if(!workers)continue;
+      if(!workers){
+        // Les ouvriers des IA voyagent vers les nouveaux villages, sans téléportation.
+        if(opts.ai!==false&&p.type==='settlement'&&p.owner!==owner){
+          const worker=base.people().find(u=>u.owner===p.owner&&u.type==='worker'&&u.hp>0&&!u.route);
+          if(worker){
+            const route=base.nav.path('infanterie',worker.x,worker.z,p.x,p.z,{maxVisited:65536});
+            if(route){worker.route=route;worker.way=0;worker.dest={x:p.x,z:p.z};worker.task='build';}
+          }
+        }
+        continue;
+      }
       p.progress=Math.min(1,p.progress+dt*(1+Math.min(workers-1,2)*.30)/p.duration);
       if(p.progress<1)continue;
       p.complete=true;
@@ -302,7 +312,20 @@
     const home=f.home&&f.home.sector;
     if(home==null)return;
     const targetNeighbours=neighbours(home).filter(id=>base.sectors()[id].owner===-1&&world.sectors[id].landRatio>.5);
-    const chooseColonial=()=>f.age>=2&&targetNeighbours.length&&build(seat,'settlement',targetNeighbours[0]).ok;
+    const chooseColonial=()=>{
+      if(!targetNeighbours.length)return false;
+      if(f.age<2){
+        if(!base.buildings().some(b=>b.owner===seat&&b.type==='upgrade'&&!b.complete)){
+          // Le moteur V2 n'expose pas encore de construction par siège pour l'IA civile.
+          return false;
+        }
+        return false;
+      }
+      for(const id of targetNeighbours)if(!hasPending(seat,'settlement')&&
+        !projects.some(p=>p.owner===seat&&p.sector===id&&p.type==='settlement')&&
+        build(seat,'settlement',id).ok)return true;
+      return false;
+    };
     function tryBuilding(type){
       if(!buildingOf(seat,type)&&!hasPending(seat,type))return build(seat,type,home).ok;
       return false;
@@ -315,7 +338,6 @@
         }
       }
       if(chooseColonial())return;
-      if(targetNeighbours.length){const id=targetNeighbours[0];if(build(seat,'settlement',id).ok)return;}
     }else if(c.focus==='science'){
       if(tryBuilding('library'))return;
       if(c.tech.length>=1&&f.age>=2&&tryBuilding('observatory'))return;
