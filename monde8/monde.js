@@ -59,21 +59,31 @@ function lakeParams(seed){
   return {x:832+(hash(seed,11,2)%45)-22,z:832+(hash(seed,13,3)%41)-20,
           shape:(hash(seed,17,5)%628)/100};
 }
+// Relief jouable : la nappe d'eau et ses collisions restent synchronisées.
 function lakeAt(x,z,seed,lc){
-  var a=(x-lc.x)/195,b=(z-lc.z)/134,dist=a*a+b*b;
-  var waves=.13*Math.sin(a*5.4+b*3.1+lc.shape)+.1*Math.sin(a*8.1-b*4.2+lc.shape*.7);
-  var east=Math.pow((x-(lc.x+128))/96,2)+Math.pow((z-(lc.z-32))/83,2);
-  var west=Math.pow((x-(lc.x-114))/96,2)+Math.pow((z-(lc.z+45))/80,2);
-  return dist<1+waves||east<1.08||west<1.06;
+  var a=(x-lc.x)/231,b=(z-lc.z)/164,dist=a*a+b*b;
+  var waves=.155*Math.sin(a*5.6+b*3.2+lc.shape)
+           +.09*Math.sin(a*9.4-b*4.4+lc.shape*.7);
+  var east=Math.pow((x-(lc.x+165))/121,2)+Math.pow((z-(lc.z-35))/106,2);
+  var west=Math.pow((x-(lc.x-150))/123,2)+Math.pow((z-(lc.z+52))/108,2);
+  var north=Math.pow((x-(lc.x+32))/87,2)+Math.pow((z-(lc.z-138))/80,2);
+  // Petite presqu'île pour rompre l'effet circulaire du plan d'eau.
+  var peninsula=Math.pow((x-(lc.x-175))/62,2)+Math.pow((z-(lc.z+135))/64,2);
+  var body=(dist<1+waves||east<1.045||west<1.04||north<.95)&&peninsula>=.60;
+  // Queue hydraulique au sud, connectée à la rivière jusqu'au barrage.
+  var neck=Math.pow((x-(lc.x+42))/29,2)+Math.pow((z-(lc.z+172))/60,2)<1;
+  return body||neck;
 }
 function riverX(z,lc,seed){
-  return lc.x+38+Math.sin((z-900)*.006+seed*.00001)*72+
-         Math.sin(z*.014+lc.shape)*17;
+  var dz=z-(lc.z+224);
+  return lc.x+42+Math.sin(dz*.0074)*59+Math.sin(dz*.0178)*16;
 }
+function damZ(lc){return lc.z+244;}
 function terrainKind(x,z,seed,lc){
   if(x<0||z<0||x>=SIZE||z>=SIZE)return 1;
   if(lakeAt(x,z,seed,lc))return 1;
-  if(z>lc.z+140&&Math.abs(x-riverX(z,lc,seed))<9){
+  if(z>lc.z+156&&Math.abs(x-riverX(z,lc,seed))<11){
+    if(Math.abs(z-damZ(lc))<6)return 3;
     for(var i=0;i<BRIDGES.length;i++)if(Math.abs(z-BRIDGES[i])<10)return 3;
     return 2;
   }
@@ -94,11 +104,17 @@ function heightRaw(x,z,seed,lc){
   h+=peak(x,z,1590,1200,95,230,205);
   h+=peak(x,z,790,450,63,200,185);
   h+=peak(x,z,1050,1800,50,245,160);
+  // Crêtes et belvédères des ruffes, jouables avec leurs propres pentes.
+  h+=peak(x,z,545,735,82,135,175);
+  h+=peak(x,z,1115,650,106,176,200);
+  h+=peak(x,z,1210,900,84,151,156);
+  h+=peak(x,z,645,1103,75,165,119);
+  h+=peak(x,z,1046,1114,64,128,127);
   var towardLake=Math.hypot((x-lc.x)/250,(z-lc.z)/220);
   if(towardLake<1.5)h-=Math.max(0,1.5-towardLake)*7;
-  if(z>lc.z+110){
+  if(z>lc.z+130){
     var rx=riverX(z,lc,seed),dr=Math.abs(x-rx);
-    if(dr<55)h-=Math.pow((55-dr)/55,2)*16;
+    if(dr<70)h-=Math.pow((70-dr)/70,2)*16;
   }
   return h;
 }
@@ -112,8 +128,18 @@ function heightBase(x,z,seed,lc){
     var niveau=8+(hash(seed,i,200)%45)/10;
     h=niveau*(1-t)+h*t;
   }
-  if(terrainKind(x,z,seed,lc)===1)return -3;
-  if(terrainKind(x,z,seed,lc)===2)return -1;
+  var kind=terrainKind(x,z,seed,lc);
+  if(kind===1)return -3;
+  if(kind===2)return -1;
+  if(kind===3)return 2;
+  // Raccordement lissé des ponts/barrage aux berges.
+  if(z>lc.z+158){
+    var delta=Math.abs(x-riverX(z,lc,seed));
+    if(delta<42){
+      var blend=smooth(clamp((delta-11)/31,0,1));
+      h=2*(1-blend)+h*blend;
+    }
+  }
   return clamp(h,-2,230);
 }
 function secteurBiome(x,z,seed,lc){
@@ -165,6 +191,14 @@ function generate(value){
       resources:{food:110+hash(seed,index,11)%85,wood:100+hash(seed,index,12)%90,
                  stone:55+hash(seed,index,13)%90,gold:15+hash(seed,index,14)%35}});
   }
+
+  var landmarks=LANDMARKS.map(function(p){return {name:p.name,type:p.type,x:p.x,z:p.z};});
+  for(var li=0;li<landmarks.length;li++){
+    if(landmarks[li].type==='lac'){landmarks[li].x=lc.x;landmarks[li].z=lc.z;}
+    if(landmarks[li].type==='barrage'){
+      landmarks[li].z=damZ(lc);landmarks[li].x=riverX(damZ(lc),lc,seed);
+    }
+  }
   var capitals=CAPITALS.map(function(p,seat){
     var col=Math.floor(p[0]/SECTOR),row=Math.floor(p[1]/SECTOR);
     var ix=Math.floor(p[0]/STEP),iz=Math.floor(p[1]/STEP),s=sectors[row*16+col];
@@ -204,8 +238,10 @@ function generate(value){
   var checksum=2166136261;
   for(var i=0;i<HH.length;i+=23)checksum=Math.imul(checksum^HH[i],16777619);
   for(var i=0;i<water.length;i+=17)checksum=Math.imul(checksum^water[i],16777619);
-  return {seed,size:SIZE,step:STEP,chunk:CHUNK,sectors,capitals,landmarks:LANDMARKS.slice(),
-    biomeColors:BIOMES,heightMap:HH,water,slope,riverX:function(z){return riverX(z,lc,seed)},cellAt,heightAt:at,canTraverse,reachable,
+  return {seed,size:SIZE,step:STEP,chunk:CHUNK,sectors,capitals,landmarks,
+    biomeColors:BIOMES,heightMap:HH,water,slope,
+    lake:{x:lc.x,z:lc.z,shape:lc.shape,damX:riverX(damZ(lc),lc,seed),damZ:damZ(lc)},
+    riverX:function(z){return riverX(z,lc,seed)},cellAt,heightAt:at,canTraverse,reachable,
     peak:peakHeight/10,waterCells:flood,checksum:(checksum>>>0).toString(16)};
 }
 return Object.freeze({VERSION:'0.1',SIZE,STEP,CHUNK,SECTOR,PLAYERS,BIOMES,
