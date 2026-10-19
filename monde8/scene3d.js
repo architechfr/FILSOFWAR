@@ -14,7 +14,8 @@ const SEED=2026;
 const random=(x,z,s=0)=>{
  let a=Math.imul((x|0)^SEED,0x45d9f3b)^Math.imul((z|0)+s,0x119de1f3);
  a=Math.imul(a^(a>>>16),0x45d9f3b);
- return (a^(a>>>16)>>>0)/4294967295;
+ // >>> is evaluated before XOR: force unsigned conversion AFTER the XOR.
+ return ((a ^ (a >>> 16)) >>> 0)/4294967296;
 };
 const noise=(x,z,scale=1,s=0)=>{
  const xx=x/scale,zz=z/scale,ix=Math.floor(xx),iz=Math.floor(zz);
@@ -241,13 +242,14 @@ function createForest(){
    region==='ruffes'?.26:region==='vignes'?.28:region==='riverside'?.76:region==='coast'?.19:.65;
   if(random(x|0,z|0,103)>chance)continue;
   let h=safeH(x,z);if(h<-1||h>195)continue;
-  let scale=.60+random(x|0,z|0,45)*1.35,variant=Math.floor(random(x|0,z|0,76)*4);
+  let scale=.60+random(x|0,z|0,45)*1.35,variant=Math.min(leaves.length-1,Math.floor(random(x|0,z|0,76)*leaves.length));
   trees.push({x,z,h,scale,variant});
  }
  const trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,trees.length);
  const groups=leaves.map((mat)=>new THREE.InstancedMesh(leafGeo,mat,Math.max(1,trees.filter(t=>t.variant===leaves.indexOf(mat)).length)));
  const counts=[0,0,0,0],dummy=new THREE.Object3D();
  trees.forEach((t,i)=>{
+  if(!Number.isInteger(t.variant)||t.variant<0||t.variant>=groups.length)throw new Error('Indice de végétation invalide: '+t.variant);
   dummy.position.set(t.x,t.h+4*t.scale,t.z);dummy.rotation.y=random(t.x|0,t.z|0,98)*6.28;dummy.scale.set(t.scale,t.scale,t.scale);dummy.updateMatrix();
   trunks.setMatrixAt(i,dummy.matrix);
   dummy.position.y=t.h+12.5*t.scale;dummy.scale.set(t.scale,t.scale*.75,t.scale);dummy.updateMatrix();
