@@ -36,6 +36,7 @@ function create(world,nav,opts){
  var visible=Array.from({length:8},function(){return new Uint8Array(256)});
  var discovered=Array.from({length:8},function(){return new Uint8Array(256)});
  var tickCount=0;
+ var doctrine=Array(8).fill('conquete');
  function rand(){seedRand=(Math.imul(seedRand,1664525)+1013904223)>>>0;return seedRand/4294967296;}
  function log(text,seat){events.unshift({t:Math.round(clock),text,seat:seat==null?-1:seat});events.length=Math.min(events.length,45);}
  function owned(seat){return people.filter(function(u){return u.owner===seat&&u.hp>0});}
@@ -361,7 +362,7 @@ function create(world,nav,opts){
     if(t.owner!==seat&&world.sectors[k].landRatio>.28)choices.push(k);
    }
   }
-  if(choices.length){
+  if(choices.length&&doctrine[seat]==='conquete'){
    var target=choices[Math.floor(rand()*choices.length)],pt=world.sectors[target];
    soldiers.slice(0,Math.min(3,soldiers.length)).forEach(function(u){if(!u.route)aiOrder(u,pt.x,pt.z,'move');});
   }
@@ -386,7 +387,7 @@ function create(world,nav,opts){
  function state(){
   return {version:2,seed,player,clock,tickCount,seedRand,people:copy(people),sectors:copy(sectors),
    civs:copy(civs),buildings:copy(buildings),events:copy(events),selected,
-   recruitment:copy(recruitment),captureProgress:captureProgress.map(function(a){return Array.from(a)}),
+   recruitment:copy(recruitment),doctrine:doctrine.slice(),captureProgress:captureProgress.map(function(a){return Array.from(a)}),
    visible:visible.map(function(a){return Array.from(a)}),discovered:discovered.map(function(a){return Array.from(a)}),nextU:U,nextB:B};
  }
  function summary(){
@@ -404,7 +405,7 @@ function create(world,nav,opts){
     !Array.isArray(s.civs)||s.civs.length!==8||!Array.isArray(s.buildings))throw Error('Sauvegarde invalide');
   clock=s.clock;tickCount=s.version===2?s.tickCount:Math.round(s.clock*20);seedRand=s.version===2?s.seedRand:seedRand;
   people=copy(s.people);sectors=copy(s.sectors);var loadedCivs=copy(s.civs);for(var i=0;i<8;i++)Object.assign(civs[i],loadedCivs[i]);buildings=copy(s.buildings);events=copy(s.events||[]);
-  recruitment=copy(s.recruitment||[]);
+  recruitment=copy(s.recruitment||[]);if(s.doctrine&&s.doctrine.length===8)doctrine=s.doctrine.slice();
   if(s.captureProgress)captureProgress=s.captureProgress.map(function(v){return Float32Array.from(v)});
   if(s.visible)visible=s.visible.map(function(v){return Uint8Array.from(v)});
   if(s.discovered)discovered=s.discovered.map(function(v){return Uint8Array.from(v)});
@@ -416,7 +417,13 @@ function create(world,nav,opts){
  for(var i=0;i<8;i++)if(i!==player)initial(i,false);
  log('Choisis ta capitale, puis clique Fonder mon royaume.',player);
  visibility();
- return {world,nav,player,civs,people:function(){return people},sectors:function(){return sectors},
+ function setDoctrine(seat,focus){
+  if(!Number.isInteger(seat)||seat<0||seat>7||!['conquete','commerce','science','culture','diplomatie'].includes(focus))return false;
+  doctrine[seat]=focus;return true;
+ }
+ return {world,nav,player,civs,setDoctrine,
+  buildFor:function(seat,type,sector){return build(seat,type,sector);},
+  people:function(){return people},sectors:function(){return sectors},
   buildings:function(){return buildings},events:function(){return events},
   fog:function(seat){return {visible:visible[seat||0],discovered:discovered[seat||0]}},
   recruitment:function(){return recruitment},progress:function(seat){return captureProgress[seat||0]},
