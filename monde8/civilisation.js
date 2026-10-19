@@ -281,6 +281,16 @@
     }
   }
   function tickTrade(){
+    // Activité commerciale locale: convertir une faible consommation
+    // de vivres en revenus. Les marchés ont donc une utilité sans guerre.
+    for(let i=0;i<8;i++){
+      const countMarkets=count(i,'market'),r=base.civs[i].resources;
+      if(countMarkets&&r.food>=countMarkets){
+        r.food-=countMarkets;
+        r.gold+=countMarkets*1.8;
+        civs[i].tradeVolume+=countMarkets*1.8;
+      }
+    }
     for(const pact of pacts){
       const a=pact.a,b=pact.b,A=base.civs[a],B=base.civs[b];
       if(!A.started||!B.started||A.alive===false||B.alive===false)continue;
