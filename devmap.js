@@ -35,4 +35,41 @@ Object.defineProperty(window,'__FOW__',{configurable:true,enumerable:true,
  }
 });
 window.FOW_DEV_MAP=true;
+
+/* 20/10 (Florian) : en mode developpement, tout se termine instantanement
+ * (constructions, recrutements, ameliorations, maison principale, ages)
+ * et un bouton remplit les reserves. Joueur 0 seulement, en solo. */
+var instant=true;
+function finir(){
+ var F=window.__FOW__,g=F&&F.game;if(!g||!g.players||!g.players[0]||g.result)return;
+ var p=g.players[0],change=false;
+ for(var i=0;i<g.buildings.length;i++){
+   var b=g.buildings[i];if(b.owner!==0||!(b.hp>0))continue;
+   if(!b.complete){
+     b.progress=1;b.complete=true;b.hp=b.maxHp;change=true;
+     if(b.type==='townhall'&&p.homeLevel===0){p.homeLevel=1;p.foundedAt=g.time;var f=g.getEntity&&g.getEntity(p.founderId);if(f)f.isFounder=false;}
+     try{g._event('build',{owner:0,x:b.x,z:b.z,buildingType:b.type,complete:true,text:'Construction terminée (mode dev).'});}catch(e){}
+   }
+   if(b.research)b.research.progress=1;
+   for(var q=0;q<b.queue.length;q++)b.queue[q].progress=1;
+ }
+ if(p.settlementUpgrade)p.settlementUpgrade.progress=1;
+ if(p.research)p.research.progress=1;
+ if(change){try{g._updatePopulation();g._updateFog();}catch(e){}}
+}
+function remplir(){
+ var F=window.__FOW__,g=F&&F.game;if(!g||!g.players||!g.players[0])return;
+ var r=g.players[0].resources;for(var k in r)if(Object.prototype.hasOwnProperty.call(r,k))r[k]+=1000;
+ try{F.toast('Mode dev : +1000 de chaque ressource.','notice',2500);}catch(e){}
+}
+setInterval(function(){if(instant)finir();},200);
+var panneau=document.createElement('div');
+panneau.style.cssText='position:fixed;right:12px;bottom:36px;z-index:99999;display:flex;gap:6px;font:600 10px system-ui';
+function bouton(txt,fn){var b=document.createElement('button');b.type='button';b.textContent=txt;
+ b.style.cssText='background:#213a2eee;color:#f7e7b8;border:1px solid #b8a06b;border-radius:5px;padding:6px 9px;cursor:pointer;font:inherit';
+ b.onclick=function(e){e.stopPropagation();fn(b);};panneau.appendChild(b);return b;}
+function libelle(b){b.textContent=instant?'⚡ Instantané : OUI':'⚡ Instantané : NON';b.style.opacity=instant?'1':'.65';}
+var bInst=bouton('',function(b){instant=!instant;libelle(b);if(instant)finir();});libelle(bInst);
+bouton('💰 +1000 de tout',remplir);
+document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(panneau)});
 })();
