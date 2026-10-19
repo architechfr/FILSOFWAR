@@ -378,10 +378,11 @@
       if(chooseColonial())return;
     }else if(c.focus==='culture'){
       if(tryBuilding('theater',2))return;
-      if(c.prestige>=150&&tryBuilding('monument'))return;
       if(c.sites.length<2&&dispatchExpedition())return;
-      if(base.summary().clock-c.festivalLast>=60&&festival(seat).ok)return;
       if(chooseColonial())return;
+      if(c.prestige>=150&&tryBuilding('monument'))return;
+      // Économiser pour l'age II avant les fêtes coûteuses.
+      if((f.age>=2||f.resources.gold>=90)&&base.summary().clock-c.festivalLast>=60&&festival(seat).ok)return;
     }else if(c.focus==='diplomatie'){
       if(tryBuilding('embassy'))return;
       if(tryBuilding('market'))return;
