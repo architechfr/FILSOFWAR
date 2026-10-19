@@ -275,8 +275,9 @@
       api.addNode(type,x,z,q,r,source,sec.id);poses.push({x:x,z:z,r:r});return true;
     }
     function secteurDe(x,z){var b=null,bd=Infinity;for(var i=0;i<SECTORS.length;i++){var dd=d2({x:x,z:z},SECTORS[i]);if(dd<bd){bd=dd;b=SECTORS[i];}}return b;}
-    // Les poissons : au bord des lacs, et le long de la riviere.
-    for(var l=0;l<reliefs.length;l++){
+    // Ancien systeme de "coins peche" desactive : les poissons flottants/decales
+    // ne sont plus generes. La peche sera liee a des constructions (cabane, bateau, port).
+    for(var l=0;false&&l<reliefs.length;l++){
       var L=reliefs[l];if(L.t!=='lac')continue;
       var C0=L.c[0],mis=0;
       for(var a8=0;a8<16&&mis<2;a8++){
@@ -285,7 +286,7 @@
           if(api.terrainAt(fx,fz)==='land'){if(poserSrc('food',fx,fz,420,1.6,sf,'fish')){mis++;a8+=4;}break;}}
       }
     }
-    for(var q2=0;q2<SECTORS.length;q2++){
+    for(var q2=0;false&&q2<SECTORS.length;q2++){
       var sr=SECTORS[q2];if(sr.row!==1&&sr.row!==2)continue;
       var nb=terroirs[sr.id]==='rives'?2:terroirs[sr.id]==='vallee'?0:1;
       for(var f2=0;f2<nb;f2++)for(var e3=0;e3<8;e3++){
