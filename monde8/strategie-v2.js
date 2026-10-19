@@ -349,6 +349,7 @@ function create(world,nav,opts){
   var owns=sectors.filter(function(s){return s.owner===seat});
   for(var ai=0;ai<units.length;ai++)if(units[ai].type==='worker'&&!units[ai].route){units[ai].task='gather';units[ai].gatherSector=nearestSector(units[ai].x,units[ai].z);units[ai].gatherKind=f.resources.stone<160?'stone':f.resources.wood<210?'wood':'food';}
   if(!buildings.some(function(b){return b.owner===seat&&b.type==='sawmill';})&&f.resources.wood>=95&&f.resources.stone>=25)build(seat,'sawmill',f.home.sector);
+  if(!buildings.some(function(b){return b.owner===seat&&b.type==='quarry';})&&f.resources.wood>=110)build(seat,'quarry',f.home.sector);
   if(owns.length&&rand()<.28){
    var s=owns[Math.floor(rand()*owns.length)];
    if(!buildings.some(function(b){return b.owner===seat&&b.sector===s.id&&b.type==='farm'}))build(seat,'farm',s.id);
