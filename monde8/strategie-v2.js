@@ -301,10 +301,9 @@ function create(world,nav,opts){
    }
    if(u.task==='gather'&&u.type==='worker'&&u.gatherSector>=0&&!u.route){
     var s=sectors[u.gatherSector],f=civs[u.owner];
-    if(s.owner===u.owner){
-     var keys=s.wood>=10?['wood','food','stone']:['food','wood','stone'];
-     var k=keys[(Math.floor(clock/12)+u.gatherSector)%keys.length];
-     if(s[k]>=1){var amount=delta*(k==='food'?2.6:1.6);s[k]=Math.max(0,s[k]-amount);f.resources[k]+=amount;}
+    if(s&&s.owner===u.owner){
+     var kind=s.wood>=10?'wood':s.food>=10?'food':'stone';
+     if(s[kind]>=1){var amount=Math.min(s[kind],delta*(kind==='food'?2.6:1.6));s[kind]-=amount;f.resources[kind]+=amount;}
     }
    }
   }
@@ -338,8 +337,13 @@ function create(world,nav,opts){
  function aiThink(seat){
   var f=civs[seat];if(!f.started)return;
   var units=owned(seat),soldiers=units.filter(function(u){return u.type!=='worker'});
-  if(units.length<8){nextUnit(seat,f.resources.food>105?'soldier':'worker');}
-  else if(soldiers.length<6)nextUnit(seat,'soldier');
+  var awaiting=recruitment.filter(function(q){return q.owner===seat}).length;
+  var activeWorkers=units.filter(function(u){return u.type==='worker'}).length;
+  var barracks=buildings.some(function(b){return b.owner===seat&&b.type==='barracks'&&b.complete});
+  var buildingBarracks=buildings.some(function(b){return b.owner===seat&&b.type==='barracks'});
+  if(!buildingBarracks&&f.resources.wood>=140&&f.resources.stone>=65)build(seat,'barracks',f.home.sector);
+  if(activeWorkers<3&&awaiting<2)nextUnit(seat,'worker');
+  else if(barracks&&soldiers.length<8&&awaiting<2)nextUnit(seat,f.age>1&&rand()<.3?'cavalry':rand()<.4?'archer':'soldier');
   var owns=sectors.filter(function(s){return s.owner===seat});
   if(owns.length&&rand()<.28){
    var s=owns[Math.floor(rand()*owns.length)];
@@ -378,8 +382,10 @@ function create(world,nav,opts){
  }
  function select(id){selected=id;return people.find(function(u){return u.id===id})||null;}
  function state(){
-  return {version:1,seed,player,clock,people:copy(people),sectors:copy(sectors),
-   civs:copy(civs),buildings:copy(buildings),events:copy(events),selected};
+  return {version:2,seed,player,clock,tickCount,seedRand,people:copy(people),sectors:copy(sectors),
+   civs:copy(civs),buildings:copy(buildings),events:copy(events),selected,
+   recruitment:copy(recruitment),captureProgress:captureProgress.map(function(a){return Array.from(a)}),
+   visible:visible.map(function(a){return Array.from(a)}),discovered:discovered.map(function(a){return Array.from(a)}),nextU:U,nextB:B};
  }
  function summary(){
   var f=civs[player];
@@ -391,19 +397,27 @@ function create(world,nav,opts){
  function save(){return JSON.stringify(state());}
  function load(json){
   var s=typeof json==='string'?JSON.parse(json):json;
-  if(!s||s.version!==1||s.seed!==seed||s.player!==player)throw Error('Sauvegarde incompatible');
+  if(!s||(s.version!==1&&s.version!==2)||s.seed!==seed||s.player!==player)throw Error('Sauvegarde incompatible');
   if(!Array.isArray(s.people)||s.people.length>3000||!Array.isArray(s.sectors)||s.sectors.length!==256||
     !Array.isArray(s.civs)||s.civs.length!==8||!Array.isArray(s.buildings))throw Error('Sauvegarde invalide');
-  clock=s.clock;people=copy(s.people);sectors=copy(s.sectors);var loadedCivs=copy(s.civs);for(var i=0;i<8;i++)Object.assign(civs[i],loadedCivs[i]);buildings=copy(s.buildings);events=copy(s.events||[]);
-  U=Math.max(0,...people.map(function(u){return Number(u.id.slice(1))||0;}));
-  B=Math.max(0,...buildings.map(function(b){return Number(b.id.slice(1))||0;}));
+  clock=s.clock;tickCount=s.version===2?s.tickCount:Math.round(s.clock*20);seedRand=s.version===2?s.seedRand:seedRand;
+  people=copy(s.people);sectors=copy(s.sectors);var loadedCivs=copy(s.civs);for(var i=0;i<8;i++)Object.assign(civs[i],loadedCivs[i]);buildings=copy(s.buildings);events=copy(s.events||[]);
+  recruitment=copy(s.recruitment||[]);
+  if(s.captureProgress)captureProgress=s.captureProgress.map(function(v){return Float32Array.from(v)});
+  if(s.visible)visible=s.visible.map(function(v){return Uint8Array.from(v)});
+  if(s.discovered)discovered=s.discovered.map(function(v){return Uint8Array.from(v)});
+  U=s.nextU||Math.max(0,...people.map(function(u){return Number(u.id.slice(1))||0;}));
+  B=s.nextB||Math.max(0,...buildings.map(function(b){return Number(b.id.slice(1))||0;}));
   selected=null;return true;
  }
  // Sept IA s'installent dans leur région; l'humain choisit quand fonder.
  for(var i=0;i<8;i++)if(i!==player)initial(i,false);
  log('Choisis ta capitale, puis clique Fonder mon royaume.',player);
+ visibility();
  return {world,nav,player,civs,people:function(){return people},sectors:function(){return sectors},
   buildings:function(){return buildings},events:function(){return events},
+  fog:function(seat){return {visible:visible[seat||0],discovered:discovered[seat||0]}},
+  recruitment:function(){return recruitment},progress:function(seat){return captureProgress[seat||0]},
   found,spawn:function(type){return nextUnit(player,type)},build:function(t,s){return build(player,t,s)},
   orderMany,destination,select,update,summary,state,save,load};
 }
