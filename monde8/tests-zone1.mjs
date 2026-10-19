@@ -12,7 +12,7 @@ for(const seed of [1,2,3,4,5,42,99,2026,9876543]){
  assert.ok(w.reachable('infanterie').accessible.every(Boolean),'Eight capitals reachable');
  assert.ok(w.reachable('cavalerie').accessible.every(Boolean),'Eight capitals reachable on horseback');
  assert.equal(w.cellAt(w.lake.damX,w.lake.damZ).kind,3,'A traversable dam');
- assert.equal(w.cellAt(w.lake.damX,w.lake.damZ+13).kind,2,'Downstream river exists');
+ assert.equal(w.cellAt(w.riverX(w.lake.damZ+13),w.lake.damZ+13).kind,2,'Downstream river exists');
  assert.ok(s.points.every(p=>w.canTraverse('infanterie',p.x,p.z)),'Points of interest are accessible');
  assert.ok(w.sectors.length===256&&w.capitals.length===8);
  const g=Civ.enhance(Game.create(w,Nav.create(w),{playerSeat:0,ai:false}),{ai:false});
