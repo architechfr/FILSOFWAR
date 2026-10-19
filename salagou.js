@@ -123,7 +123,7 @@
   };
   carte.decor=function(col,row){
     var out=originalDecor.call(this,col,row),g=carte.courant,L=g&&g.fowSalagou;
-    if(L&&Math.floor(L.barrage.x/64)===col&&Math.floor(L.barrage.z/64)===row){
+    if(L&&L.barrage&&Math.floor(L.barrage.x/64)===col&&Math.floor(L.barrage.z/64)===row){
       out.barrage=L.barrage;
     }
     return out;
