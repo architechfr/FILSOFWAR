@@ -20,7 +20,8 @@
 // window.__FOW__ (que jeu.js pose a chaque nouvelle partie) nous la signale.
 (function(){
   var P=new URLSearchParams(location.search);
-  if(P.get('mode')==='reseau')return;
+  // Le diagnostic visuel revele toute la carte : ne pas melanger ces parties avec les sauvegardes normales.
+  if(P.get('mode')==='reseau'||P.get('devmap')==='1')return;
   var CLE='fow.sauvegarde',TICK=0.05;
   var METHODES=['order','train','placeBuilding','foundSettlement','upgradeSettlement','advanceAge','research','trade','rallyVillage'];
   var NIVEAUX=['Nomade','Campement','Maison principale','Hôtel de ville'];
