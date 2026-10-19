@@ -415,7 +415,7 @@
       var ru=grosse(rug,x,z);if(ru>.02){var cr=1-Math.abs(2*vn(x,z,38,g+3)-1);h+=ru*cr*cr*cr*7;}
       var dr=riverFn?Math.abs(z-riverFn(x)):99;h*=lisse(10,34,dr);
       // Pas de cuvette au hasard : seuls les lacs et marais descendent sous l'eau.
-      H[iz*HN+ix]=h<-.6?-.6+(h+.6)*.15:h;
+      H[iz*HN+ix]=(h<-.6?-.6+(h+.6)*.15:h)+montagneSalagou(x,z);
     }
     // Un replat au coeur de chaque secteur : on y bâtit a plat.
     var S=sectorsVue||[];
@@ -452,6 +452,16 @@
     var gx=x/2,gz=z/2;if(gx<0)gx=0;if(gz<0)gz=0;if(gx>HN-1.001)gx=HN-1.001;if(gz>HN-1.001)gz=HN-1.001;
     var ix=Math.floor(gx),iz=Math.floor(gz),fx=gx-ix,fz=gz-iz,i=iz*HN+ix;
     return T[i]*(1-fx)*(1-fz)+T[i+1]*fx*(1-fz)+T[i+HN]*(1-fx)*fz+T[i+HN+1]*fx*fz;
+  }
+  function montagneSalagou(x,z){
+    // Cretes hors du plan d'eau, avec cols et deformations reproductibles.
+    var pics=[[129,120,17,46,33],[287,121,21,42,30],[302,255,15,39,28],[101,280,12,30,44]];
+    var h=0;
+    for(var i=0;i<pics.length;i++){
+      var p=pics[i],dx=(x-p[0])/p[3],dz=(z-p[1])/p[4],d=dx*dx+dz*dz;
+      if(d<1){var v=(1-d);h+=p[2]*v*v*(.83+.17*Math.sin(x*.16+z*.11)*Math.sin(z*.13));}
+    }
+    return h;
   }
   function h(x,z){var R=relief();return R?echant(R.H,x,z):0;}
   function hBat(x,z,r){var R=relief();if(!R)return 0;var k=(r||2)*.7;return Math.min(echant(R.H,x-k,z-k),echant(R.H,x+k,z-k),echant(R.H,x-k,z+k),echant(R.H,x+k,z+k),echant(R.H,x,z));}
