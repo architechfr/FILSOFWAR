@@ -19,7 +19,7 @@
 // fleurs() ; l'atlas et la minicarte demandent carteCouleur() ; la graine
 // d'une partie solo vient de graine().
 (function(){
-  var VERSION='3';
+  var VERSION='4-nord-sud';
   var TERROIRS={
     vallee: {nom:'Vallée',        a:0x8a9852,b:0x758646,herbe:.6, fleurs:.07,carte:[[70,72,48],[140,134,86]]},
     foret:  {nom:'Forêt de Campawood',a:0x5e7a3e,b:0x4a6634,herbe:.88,fleurs:.04,carte:[[36,58,34],[72,112,60]]},
@@ -87,7 +87,7 @@
     // On garde seulement un petit jitter visuel : la geographie ne change plus de partie en partie.
     var rep=G&&B?[
       {x:B.salagou.x,z:B.salagou.z,t:'ruffes'},
-      {x:B.clermont.x,z:B.clermont.z,t:'ruffes'},
+      {x:B.clermont.x,z:B.clermont.z,t:'prairie'},
       {x:B.gorges.x,z:B.gorges.z,t:'causses'},
       {x:B['saint-guilhem'].x,z:B['saint-guilhem'].z,t:'causses'},
       {x:B.lodeve.x,z:B.lodeve.z,t:'causses'},
@@ -122,14 +122,13 @@
         var d=dx*dx+dz*dz;
         if(p.t==='rives'){
           // L'Herault est desormais le vrai axe v0.8 du moteur.
-          var rz=G&&G.riverZ?G.riverZ(sec.x):p.z;
-          var dr=sec.z-rz;
-          d=dx*dx*.34+dr*dr*.58;
+          if(G&&G.riverDist){var drn=G.riverDist(sec.x,sec.z);d=dz*dz*.34+drn*drn*.58;}
+          else{var rz=G&&G.riverZ?G.riverZ(sec.x):p.z;var dr=sec.z-rz;d=dx*dx*.34+dr*dr*.58;}
         }
         if(d<best){best=d;type=p.t;}
       }
       // La bande proche du fleuve gagne toujours sur les foyers voisins.
-      if(G&&G.riverZ&&Math.abs(sec.z-G.riverZ(sec.x))<78&&type!=='causses')type='rives';
+      if(G&&dRiv(sec.x,sec.z)<78&&type!=='causses')type='rives';
       result[sec.id]=type;
     }
     return result;
@@ -155,7 +154,7 @@
           var wx=x*2+1,wz=z*2+1,dx=wx-C[0],dz=wz-C[1];
           if(dx*dx+dz*dz>R2)continue;
           // Aucun obstacle procedural ne coupe ou ne bouche la vallée de l'Hérault.
-          if(riverFn&&Math.abs(wz-riverFn(wx))<34)continue;
+          if(dRiv(wx,wz)<34)continue;
           G[z*OB_N+x]=code;
         }
       }
@@ -179,11 +178,14 @@
     }
     function permis(x,z,r){
       if(x<r+10||z<r+10||x>758-r||z>758-r)return false;
-      var dzr=z-api.riverZ(x);if(dzr<0)dzr=-dzr;if(dzr<r+42)return false;
+      var dzr=dRiv(x,z);if(dzr<r+42)return false;
       for(var i=0;i<SECTORS.length;i++){var s=SECTORS[i],m=r+(s.id===depart.id||s.id===loin.id?38:24);if(d2({x:x,z:z},s)<m*m)return false;}
       for(var j=0;j<feats.length;j++)for(var c=0;c<feats[j].c.length;c++){var C=feats[j].c[c],m2=C[2]+r+12;if(d2({x:x,z:z},{x:C[0],z:C[1]})<m2*m2)return false;}
       return true;
     }
+    // 19/10 soir : le lac du Salagou est pose en premier, a sa place, avant toute ressource.
+    var GPs=window.FOW_GEO_PLAYABLE,SLs=GPs&&GPs.nordSud&&GPs.byId&&GPs.byId.salagou;
+    if(SLs)feats.push({t:'lac',c:[[SLs.x,SLs.z,30],[SLs.x-22,SLs.z-6,20],[SLs.x+22,SLs.z+8,20],[SLs.x+6,SLs.z+22,16],[SLs.x-6,SLs.z-20,15]],sec:-1,nom:'Lac du Salagou'});
     var ESPECE={causses:[['falaise',.9]],ruffes:[['falaise',.75],['lac',.2]],foret:[['marais',.4],['lac',.35]],prairie:[['lac',.55],['marais',.1]],rives:[['lac',.45],['marais',.35]]};
     for(var q=0;q<SECTORS.length;q++){
       var sec=SECTORS[q],t=terroirs[sec.id],choix=ESPECE[t];
@@ -228,6 +230,7 @@
     function libre(x,z,r,sec){
       var p={x:x,z:z};
       if(d2(p,sec)<100)return false;                                   // le coeur du secteur reste au colon
+      if(auPont(x,z,20))return false;
       for(var b=0;b<api.BRIDGES.length;b++){var bx=api.BRIDGES[b],dx=x-bx;if(dx>-14&&dx<14){var dz=z-api.riverZ(bx);if(dz>-18&&dz<18)return false;}}
       for(var i=0;i<poses.length;i++){var o=poses[i],m=o.r+r+1.1;if(d2(o,p)<m*m)return false;}
       return true;
@@ -346,7 +349,7 @@
         if(dx9*dx9+dz9*dz9!==1)continue;
         var mx=(A.x+B.x)/2,mz=(A.z+B.z)/2,p9={x:mx,z:mz};
         if(d2(p9,depart)<160*160||d2(p9,loin0)<160*160)continue;
-        var dzr9=mz-api.riverZ(mx);if(dzr9<0)dzr9=-dzr9;if(dzr9<18)continue;
+        var dzr9=dRiv(mx,mz);if(dzr9<18)continue;
         lis.push(p9);
       }
       for(var c9=lis.length-1;c9>0;c9--){var j9=Math.floor(rnd()*(c9+1)),x9=lis[c9];lis[c9]=lis[j9];lis[j9]=x9;}
@@ -405,7 +408,7 @@
     base.r=r;base.g=g;base.b=b;
     var GP=window.FOW_GEO_PLAYABLE,SL=GP&&GP.byId&&GP.byId.salagou;
     if(SL){
-      var ds=Math.hypot(x-SL.x,z-SL.z),ks=1-lisse(72,132,ds);
+      var ds=Math.hypot(x-SL.x,z-SL.z),ks=1-lisse(62,118,ds);
       if(ks>0)base.lerp(tA.setHex(0xa54b36),ks*.86);
     }
     return base;
@@ -422,6 +425,10 @@
      secteur pour batir, des cuvettes pour les lacs et marais, des falaises dressees.
      Grille de 385 x 385 points (2 m), calculee une fois par partie. */
   var HN=385,riverFn=null;
+  // 19/10 soir : l'Herault coule du nord au sud. La distance au fleuve vient de la
+  // geographie quand elle la connait, sinon de l'ancienne riviere horizontale.
+  function dRiv(x,z){var G=window.FOW_GEO_PLAYABLE;if(G&&G.riverDist)return G.riverDist(x,z);return riverFn?Math.abs(z-riverFn(x)):999;}
+  function auPont(x,z,m){var G=window.FOW_GEO_PLAYABLE,P=G&&G.ponts||[];for(var i=0;i<P.length;i++){var dx=x-P[i].x,dz=z-P[i].z;if(dx*dx+dz*dz<m*m)return true;}return false;}
   var AMP={vallee:2.4,foret:6,prairie:3.6,causses:10,ruffes:8,rives:2};
   var NIV={lac:-1.15,marais:-.35};
   function hash(ix,iz,g){var h=Math.imul(ix|0,374761393)^Math.imul(iz|0,668265263)^Math.imul(g|0,2246822519);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;}
@@ -445,13 +452,13 @@
       var x=ix*2,z=iz*2,n=vn(x,z,64,g)+vn(x,z,26,g+1)*.5+vn(x,z,11,g+2)*.18,c=n/1.68-.42,h=c*ampAt(x,z)*1.6;
       // Les causses et les ruffes ont des cretes : un bruit « en arete ».
       var ru=grosse(rug,x,z);if(ru>.02){var cr=1-Math.abs(2*vn(x,z,38,g+3)-1);h+=ru*cr*cr*cr*7;}
-      var dr=riverFn?Math.abs(z-riverFn(x)):99;h*=lisse(10,34,dr);
+      var dr=dRiv(x,z);h*=lisse(10,34,dr);
       // Pas de cuvette au hasard : seuls les lacs et marais descendent sous l'eau.
       var hh0=(h<-.6?-.6+(h+.6)*.15:h)+montagneSalagou(x,z);
       // Gorges de l'Herault : vallée encaissée lisible autour du repère géographique.
       var GP=window.FOW_GEO_PLAYABLE,GG=GP&&GP.byId&&GP.byId.gorges;
       if(GG){
-        var dg=Math.hypot(x-GG.x,z-GG.z),drg=riverFn?Math.abs(z-riverFn(x)):999;
+        var dg=Math.hypot(x-GG.x,z-GG.z),drg=dRiv(x,z);
         if(dg<115&&drg>7&&drg<62){
           var kg=(1-dg/115)*lisse(7,28,drg)*(1-lisse(48,64,drg));
           hh0+=kg*(12+8*(1-Math.abs(2*vn(x,z,23,g+19)-1)));
@@ -484,15 +491,23 @@
       H[i]=hh;
     }
     // Derniere passe : l'Herault reste un cours d'eau continu, jamais enseveli par une colline.
-    if(riverFn){
+    if(riverFn||(window.FOW_GEO_PLAYABLE&&window.FOW_GEO_PLAYABLE.riverDist)){
       for(var rz0=0;rz0<HN;rz0++)for(var rx0=0;rx0<HN;rx0++){
-        var wx0=rx0*2,wz0=rz0*2,dr0=Math.abs(wz0-riverFn(wx0)),ii0=rz0*HN+rx0;
+        var wx0=rx0*2,wz0=rz0*2,dr0=dRiv(wx0,wz0),ii0=rz0*HN+rx0;
         if(dr0<8)H[ii0]=Math.min(H[ii0],-.58);
         else if(dr0<42){
           // Talus progressif sur 34 m : pas de mur vertical ni de montagne qui traverse l'eau.
           var kv=lisse(8,42,dr0),cap=-.58+kv*10.5;
           H[ii0]=Math.min(H[ii0],cap);
         }
+      }
+    }
+    var GPm=window.FOW_GEO_PLAYABLE;
+    if(GPm&&GPm.coastZ){
+      for(var cz1=0;cz1<HN;cz1++)for(var cx1=0;cx1<HN;cx1++){
+        var wxc=cx1*2,wzc=cz1*2,dc=wzc-GPm.coastZ(wxc),ic=cz1*HN+cx1;
+        if(dc>0)H[ic]=Math.min(H[ic],-.9-Math.min(1.2,dc*.05));
+        else if(dc>-26){var kc=lisse(-26,0,dc);H[ic]=H[ic]*(1-kc)+(-.62)*kc;}
       }
     }
     return {H:H,L:L,M:M,F:F};
@@ -586,14 +601,14 @@
         if(r()<.45)out.rochers.push({x:x,y:hh-.15,z:z,sx:.7+r()*1.8,sy:.5+r()*1.4,sz:.7+r()*1.6,ry:r()*6.28});
         else if(r()<.16)out.arbres.push({x:x,y:hh-.05,z:z,h:2.4+r()*1.6,pin:true});
       }else if(mm>-.05&&mm<.85&&r()<.8){if(r()<.75)out.roseaux.push({x:x,y:-.11+NIV.marais+.25,z:z,sx:.09+r()*.06,sy:.7+r()*.7,sz:.09+r()*.06,ry:r()*6.28});else out.nenuphars.push({x:x,y:-.11+NIV.marais+.02,z:z,sx:.5+r()*.4,sy:.5+r()*.4,sz:1,rx:-1.5708});}
-      else if(ll>-.4&&ll<-.02&&r()<.06&&(!riverFn||Math.abs(z-riverFn(x))>10)&&(!window.FOW_GEO_PLAYABLE||!window.FOW_GEO_PLAYABLE.isSea(x,z)))
+      else if(ll>-.4&&ll<-.02&&r()<.06&&dRiv(x,z)>10&&(!window.FOW_GEO_PLAYABLE||!window.FOW_GEO_PLAYABLE.isSea(x,z)))
         out.arbres.push({x:x,y:hh-.05,z:z,h:2.6+r()*1.2,saule:true});
     }
     // Sur les pentes : des rochers et quelques buissons, pour que l'oeil lise les collines.
     for(var k3=0;k3<140;k3++){var xp=x0+r()*64,zp=z0+r()*64;if(echant(R.L,xp,zp)>-.4||echant(R.M,xp,zp)>-.3||echant(R.F,xp,zp)>-.05)continue;
       var gx3=echant(R.H,xp-2,zp)-echant(R.H,xp+2,zp),gz3=echant(R.H,xp,zp-2)-echant(R.H,xp,zp+2),pe=Math.sqrt(gx3*gx3+gz3*gz3)/4,hp=echant(R.H,xp,zp);
       if(pe>.18&&r()<.5)out.rochers.push({x:xp,y:hp-.1,z:zp,sx:.4+r()*.9,sy:.3+r()*.6,sz:.4+r()*.8,ry:r()*6.28});
-      else if(hp>2.5&&r()<.1&&(!riverFn||Math.abs(zp-riverFn(xp))>12)&&(!window.FOW_GEO_PLAYABLE||!window.FOW_GEO_PLAYABLE.isSea(xp,zp)))
+      else if(hp>2.5&&r()<.1&&dRiv(xp,zp)>12&&(!window.FOW_GEO_PLAYABLE||!window.FOW_GEO_PLAYABLE.isSea(xp,zp)))
         out.buissons.push({x:xp,y:hp+.25,z:zp,sx:.5+r()*.5,sy:.35+r()*.3,sz:.5+r()*.5});}
     // Les marais, plus touffus : roseaux et nenuphars.
     for(var k2=0;k2<500;k2++){var xm=x0+r()*64,zm=z0+r()*64,mv=echant(R.M,xm,zm);if(mv<-.08||mv>.95)continue;
@@ -621,7 +636,7 @@
     // Les teintes des terroirs sur une grille de 6 m, puis interpolees : bien plus rapide sur telephone.
     if(!game._fowTeintes){var TN=129,TT=new Float32Array(TN*TN*3);
       for(var tz=0;tz<TN;tz++)for(var tx=0;tx<TN;tx++){var pp=poids(game,tx*6,tz*6),o2=(tz*TN+tx)*3,r1=156,g1=154,b1=98;
-        if(pp){r1=g1=b1=0;for(var k in pp){var P=PEINT[k]||PEINT.vallee;r1+=P[0]*pp[k];g1+=P[1]*pp[k];b1+=P[2]*pp[k];}}TT[o2]=r1;TT[o2+1]=g1;TT[o2+2]=b1;}
+        if(pp){r1=g1=b1=0;for(var k in pp){var P=PEINT[k]||PEINT.vallee;r1+=P[0]*pp[k];g1+=P[1]*pp[k];b1+=P[2]*pp[k];}}var SLp=window.FOW_GEO_PLAYABLE&&window.FOW_GEO_PLAYABLE.byId&&window.FOW_GEO_PLAYABLE.byId.salagou;if(SLp){var kr=(1-lisse(62,118,Math.hypot(tx*6-SLp.x,tz*6-SLp.z)))*.86,PR=PEINT.ruffes||[170,86,60];r1=r1*(1-kr)+PR[0]*kr;g1=g1*(1-kr)+PR[1]*kr;b1=b1*(1-kr)+PR[2]*kr;}TT[o2]=r1;TT[o2+1]=g1;TT[o2+2]=b1;}
       game._fowTeintes=TT;}
     var TE=game._fowTeintes;
     for(var py=0;py<hh;py++)for(var px=0;px<w;px++){
@@ -636,7 +651,10 @@
         if(l>-.25&&l<=0){var ks=lisse(-.25,0,l)*.6;r=r*(1-ks)+214*ks;g=g*(1-ks)+196*ks;b=b*(1-ks)+140*ks;}
         if(l>0){var kl=lisse(0,.5,l);r=86-22*kl;g=150-26*kl;b=168-14*kl;}
       }
-      var dr=riverFn?Math.abs(z-riverFn(x)):99;
+      var dr=dRiv(x,z);
+      var GPa=window.FOW_GEO_PLAYABLE;
+      if(GPa&&GPa.isSea&&GPa.isSea(x,z)){var kd=Math.min(1,(z-GPa.coastZ(x))/40);r=78-18*kd;g=142-22*kd;b=166-6*kd;}
+      else if(GPa&&GPa.isBeach&&GPa.isBeach(x,z)){r=r*.35+214*.65;g=g*.35+196*.65;b=b*.35+150*.65;}
       if(dr<6.5){r=70;g=134;b=156;}else if(dr<8.5){var kb=.5;r=r*(1-kb)+214*kb;g=g*(1-kb)+196*kb;b=b*(1-kb)+140*kb;}
       // Le grain du papier.
       var gr=(hash(px,py,7)-.5)*14;col[o]=r+gr;col[o+1]=g+gr;col[o+2]=b+gr*.8;
@@ -685,8 +703,8 @@
         ctx.fillStyle='rgba(53,40,27,.94)';ctx.fillText(nomg,lx0,lz0);
       }
       // L'Herault porte enfin son nom sur la carte jouable.
-      var hx=430,hz=GP.riverZ?GP.riverZ(hx):384;
-      if(connu(hx,hz)){ctx.save();ctx.translate(hx*SX,hz*SZ);ctx.rotate(-.1);ctx.font='italic 700 '+Math.max(9,Math.round(w/58))+'px Georgia, serif';ctx.fillStyle='rgba(236,244,237,.9)';ctx.strokeStyle='rgba(38,70,72,.8)';ctx.lineWidth=3;ctx.strokeText("L’HÉRAULT",0,-8);ctx.fillText("L’HÉRAULT",0,-8);ctx.restore();}
+      var hz=GP.riverX?560:384,hx=GP.riverX?GP.riverX(hz)+16:430;if(!GP.riverX)hz=GP.riverZ?GP.riverZ(hx):384;
+      if(connu(hx,hz)){ctx.save();ctx.translate(hx*SX,hz*SZ);ctx.rotate(GP.riverX?Math.PI/2:-.1);ctx.font='italic 700 '+Math.max(9,Math.round(w/58))+'px Georgia, serif';ctx.fillStyle='rgba(236,244,237,.9)';ctx.strokeStyle='rgba(38,70,72,.8)';ctx.lineWidth=3;ctx.strokeText("L’HÉRAULT",0,-8);ctx.fillText("L’HÉRAULT",0,-8);ctx.restore();}
     }
     // Les falaises : des hachures sombres.
     if(R)for(var f=0;f<(game.reliefs||[]).length;f++){

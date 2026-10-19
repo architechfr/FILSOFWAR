@@ -71,6 +71,8 @@
       var P=candidats[f],x=P[0],z=P[1];
       for(var radius=P[2];radius>=7;radius-=2){
         if(x-radius<10||z-radius<12||x+radius>758||z+radius>756)continue;
+        // Le lac garde ses distances avec l'Herault : seul le ruisseau les relie.
+        var GPr=window.FOW_GEO_PLAYABLE;if(GPr&&GPr.riverDist&&GPr.riverDist(x,z)<radius+50)continue;
         var possible=true;
         for(var b=0;b<obstacles.length&&possible;b++){
           var ent=obstacles[b],free=radius+(ent.radius||3)+3;
@@ -112,7 +114,7 @@
     game.fowSalagou={
       x:center.x,z:center.z,rayon:Math.max(50,Math.ceil(Math.sqrt(surfaceApres*4/Math.PI))),
       surfaceAvant:surfaceAvant,surfaceApres:surfaceApres,lobes:ajoutes,barrage:barrage,
-      sommet:{x:355,z:83,nom:'Pic Saint-Loup'}
+      sommet:(function(){var G=window.FOW_GEO_PLAYABLE;if(G&&G.nordSud&&G.xy){var q=G.xy(43.8,3.81);return {x:q.x,z:q.z,nom:'Pic Saint-Loup'};}return {x:355,z:83,nom:'Pic Saint-Loup'};})()
     };
     game.heraultLac.rayon=game.fowSalagou.rayon;
   }

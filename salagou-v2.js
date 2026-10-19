@@ -59,6 +59,7 @@ function elargir(game,api,lake,G,mask,protect){
   var p=candidates[i],x=p[0],z=p[1];
   for(var r=p[2];r>=8;r-=2.5){
    if(x-r<11||z-r<11||x+r>756||z+r>756)continue;
+   var GPr=window.FOW_GEO_PLAYABLE;if(GPr&&GPr.riverDist&&GPr.riverDist(x,z)<r+50)continue;
    var collision=false;
    for(var q=0;q<protect.length;q++){var u=protect[q],d=r+u.r;if(d2(x,z,u)<d*d){collision=true;break;}}
    if(collision)continue;
@@ -79,7 +80,12 @@ function elargir(game,api,lake,G,mask,protect){
  }
  return {before:old,after:count,lobes:accepted};
 }
+// 19/10 soir : sur la carte nord-sud, le fleuve est a l'est du lac (avant = cote lac).
+function avant(x,z,m){var GP=window.FOW_GEO_PLAYABLE;if(GP&&GP.nordSud)return x<GP.riverX(z)-m;return z<api0.riverZ(x)-m;}
+function arrive(x,z,m){var GP=window.FOW_GEO_PLAYABLE;if(GP&&GP.nordSud)return GP.riverDist(x,z)<m;return z>=api0.riverZ(x)-m;}
+var api0=null;
 function ruisseau(game,api,G,mask,protect){
+ api0=api;
  var center=game.heraultLac,blocked=new Uint8Array(TOTAL);
  for(var i=0;i<TOTAL;i++)if(G[i])blocked[i]=1;
  // Empreinte de protection autour de toutes les entites / secteurs.
@@ -90,13 +96,13 @@ function ruisseau(game,api,G,mask,protect){
  function libre(k){
   if(k<0||k>=TOTAL||blocked[k])return false;
   var ix=k%N,iz=(k-ix)/N,x=ix*2+1,z=iz*2+1;
-  if(x<16||x>752||z<16||z>api.riverZ(x)-4)return false;
+  if(x<16||x>752||z<16||!avant(x,z,4))return false;
   return api.terrainAt(x,z)!=='water';
  }
  // Recherche multisource: toutes les ouvertures libres de la rive sud.
  var Q=new Int32Array(TOTAL),prev=new Int32Array(TOTAL),vu=new Uint8Array(TOTAL),orig=new Int32Array(TOTAL),head=0,tail=0;
  prev.fill(-1);orig.fill(-1);
- var minX=center.x-124,maxX=center.x+124,minZ=center.z+12,maxZ=Math.min(346,center.z+140);
+ var minX=center.x-124,maxX=center.x+124,minZ=center.z+12,maxZ=window.FOW_GEO_PLAYABLE&&window.FOW_GEO_PLAYABLE.nordSud?center.z+140:Math.min(346,center.z+140);
  for(var z=Math.max(16,Math.floor(minZ/2));z<Math.min(N-5,Math.floor(maxZ/2));z++){
   for(var x=Math.max(12,Math.floor(minX/2));x<Math.min(N-12,Math.floor(maxX/2));x++){
    var lakeID=z*N+x,first=(z+1)*N+x;
@@ -108,7 +114,7 @@ function ruisseau(game,api,G,mask,protect){
  var goal=-1;
  while(head<tail){
   var k=Q[head++],x=k%N,z=(k-x)/N,wx=x*2+1,wz=z*2+1;
-  if(wz>=api.riverZ(wx)-9){goal=k;break;}
+  if(arrive(wx,wz,9)){goal=k;break;}
   var cand=[z<N-2?k+N:-1,x<N-2?k+1:-1,x>1?k-1:-1,z>1?k-N:-1];
   for(var m=0;m<4;m++){var j=cand[m];if(j<0||vu[j]||!libre(j))continue;
    var iy=Math.floor(j/N);if(iy<Math.floor((center.z+5)/2))continue;
@@ -136,9 +142,9 @@ function ruisseau(game,api,G,mask,protect){
   for(var j=0;j<ids.length;j++){
    var k=ids[j],x=(k%N)*2+1,z=Math.floor(k/N)*2+1;
    if(stamp[k]||G[k])continue;
-   if(blocked[k]&&z<api.riverZ(x)-6)continue;
+   if(blocked[k]&&avant(x,z,6))continue;
    // L'embouchure se raccorde a la riviere existante.
-   if(api.terrainAt(x,z)==='water'&&z<api.riverZ(x)-6)continue;
+   if(api.terrainAt(x,z)==='water'&&avant(x,z,6))continue;
    stamp[k]=1;added.push(k);
   }
   if(!ok)break;

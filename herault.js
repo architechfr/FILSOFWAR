@@ -22,6 +22,15 @@
   var atlasAvant = carte.atlasDecor;
   var version = String(carte.version) + '-herault3';
 
+  // Sur la carte nord-sud, chaque lieu suit son repere geographique (decalage en metres).
+  var ANCRES={'Les Sources de Campagnan':['campagnan',22,-18],'Les Menhirs de Belarga':['belarga',26,8],
+    'La Mine des Ruffes du Salagou':['salagou',46,58],'Le Belvedere des Gorges':['gorges',-30,6],
+    'La Source du Salagou':['salagou',-38,-62],'L\'Ancienne Mine des Causses':['lodeve',-26,-52]};
+  function placeLieu(l){
+    var G=window.FOW_GEO_PLAYABLE,a=ANCRES[l.nom],B=G&&G.nordSud&&a&&G.byId[a[0]];
+    if(!B)return l;
+    return {nom:l.nom,site:l.site,region:l.region,x:B.x+a[1],z:B.z+a[2]};
+  }
   function distance2(a,b){var x=a.x-b.x,z=a.z-b.z;return x*x+z*z;}
 
   function peutPoser(game, api, pos, camps) {
@@ -71,7 +80,11 @@
   function poserLacSalagou(game, api) {
     var G=game.obstacles, F=game.reliefs;
     if(!G || G.length!==384*384 || !Array.isArray(F) || !api.SECTORS)return null;
+    for(var dj=0;dj<F.length;dj++)if(F[dj].nom==='Lac du Salagou'){var c0=F[dj].c[0];return {x:c0[0],z:c0[1],rayon:50};}
     var origines=[[195,202],[223,206],[162,201],[231,174],[159,227],[266,207]];
+    // 19/10 soir : le lac est au vrai Salagou de la carte nord-sud, entoure de ses ruffes rouges.
+    var GPl=window.FOW_GEO_PLAYABLE,SLl=GPl&&GPl.nordSud&&GPl.byId&&GPl.byId.salagou;
+    if(SLl)origines=[[SLl.x,SLl.z],[SLl.x+8,SLl.z-8],[SLl.x-8,SLl.z+6],[SLl.x+12,SLl.z+10],[SLl.x-14,SLl.z-10],[SLl.x+4,SLl.z+18]];
     var formes=[[0,0,32],[-18,5,19],[19,-9,19],[10,19,15]];
     var encombrants=[game.nodes||[],game.villages||[],game.sites||[],game.herds||[]];
     for(var n=0;n<origines.length;n++){
@@ -211,7 +224,7 @@
     }
     var camps=[start,autre].filter(Boolean);
     for(var j=0;j<LIEUX.length;j++){
-      var lieu=LIEUX[j],p=trouver(game,api,lieu,camps,(game.seed|0)+j*7919);
+      var lieu=placeLieu(LIEUX[j]),p=trouver(game,api,lieu,camps,(game.seed|0)+j*7919);
       if(!p)continue;
       api.addSite(lieu.site,p.x,p.z,lieu.nom);
       game.heraultLieux.push({nom:lieu.nom,region:lieu.region,site:lieu.site,x:p.x,z:p.z});
