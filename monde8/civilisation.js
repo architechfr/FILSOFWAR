@@ -381,8 +381,10 @@
       if(c.sites.length<2&&dispatchExpedition())return;
       if(chooseColonial())return;
       if(c.prestige>=150&&tryBuilding('monument'))return;
-      // Économiser pour l'age II avant les fêtes coûteuses.
-      if((f.age>=2||f.resources.gold>=90)&&base.summary().clock-c.festivalLast>=60&&festival(seat).ok)return;
+      // Construire au moins un monument avant de puiser dans la trésorerie
+      // lors des grands festivals; évite de bloquer la victoire culturelle.
+      if(!buildingOf(seat,'monument'))return;
+      if(f.age>=2&&base.summary().clock-c.festivalLast>=60&&festival(seat).ok)return;
     }else if(c.focus==='diplomatie'){
       if(tryBuilding('embassy'))return;
       if(tryBuilding('market'))return;
