@@ -4,7 +4,7 @@
 (function(root,factory){
  const plugin=factory();
  if(typeof module==='object'&&module.exports)module.exports=plugin;
- if(root.FOW_WORLD8)plugin.install(root.FOW_WORLD8);
+ if(root.FOW_WORLD8)root.FOW_WORLD8=plugin.install(root.FOW_WORLD8);
  root.FOW_ZONE1=plugin;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
@@ -89,11 +89,12 @@ function enrich(world){
  return world;
 }
 function install(generator){
- if(!generator||generator.__zone1Installed) return generator;
- const original=generator.generate;
- generator.generate=function(seed){return enrich(original(seed));};
- generator.__zone1Installed=true;
- return generator;
+ if(!generator||generator.__zone1Installed)return generator;
+ // FOW_WORLD8 est un Object.freeze : ne jamais tenter de le muter.
+ const facade=Object.assign({},generator);
+ facade.generate=function(seed){return enrich(generator.generate(seed));};
+ facade.__zone1Installed=true;
+ return facade;
 }
 return Object.freeze({VERSION:'1.0',install,enrich,TYPES});
 });
