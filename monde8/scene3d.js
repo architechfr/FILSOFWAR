@@ -31,7 +31,15 @@ const lookups=new Map(),colors={
  ruffes:'#ae6249',causse:'#aba494',garrigue:'#879b69',riverside:'#83ab7e',
  prairie:'#94ad6c',vignes:'#9cac69',coast:'#d1c49b',sea:'#499bb1'
 };
-const featureFlags={labels:true,trees:true,roads:true};
+const featureFlags={labels:true,trees:true,roads:true,resources:true};
+const RESOURCE_ZONES=[
+ {name:'Forêt de Campawood',kind:'wood',x:365,z:420,rx:260,rz:210},
+ {name:'Bois du Nord',kind:'wood',x:760,z:330,rx:220,rz:170},
+ {name:'Carrières des Causses',kind:'stone',x:1420,z:430,rx:250,rz:190},
+ {name:'Filons des Ruffes',kind:'gold',x:850,z:760,rx:190,rz:150},
+ {name:'Garrigues sauvages',kind:'hunt',x:1630,z:850,rx:280,rz:220},
+ {name:'Vallée agricole',kind:'food',x:1120,z:1260,rx:390,rz:220}
+];
 function peak(x,z,cx,cz,h,rx,rz){
  const dx=(x-cx)/rx,dz=(z-cz)/rz,k=dx*dx+dz*dz;
  return k<1?h*Math.pow(1-k,1.7):0;
@@ -151,7 +159,10 @@ function createWater(){
  // Due rotateX, yShape -> zShape, positive rotation produces positive z.
  const sea=new THREE.Mesh(seaGeo,new THREE.MeshPhysicalMaterial({color:0x2c91ad,roughness:.35,metalness:0,transparent:true,opacity:.88,side:THREE.DoubleSide}));
  sea.position.y=-3;scene.add(sea);
- ribbon(geo.river,8.5,'#5ca8b8',-2.15);
+ // L'Hérault doit être un repère géographique majeur, pas un filet décoratif.
+ ribbon(geo.river,14,'#4f9eb4',-1.7);
+ // Deux bandes de berge renforcent visuellement la vallée sans créer d'obstacle.
+ ribbon(geo.river,19,'#6f9870',-2.35);
  const origin={x:geo.lake.x+50,z:geo.lake.z+170},out=geo.xy(43.607,3.495);
  ribbon([origin,{x:origin.x+48,z:origin.z+65},{x:out.x-19,z:out.z-25},out],6.5,'#72b7ba',-1.95);
 }
@@ -226,30 +237,41 @@ function createForest(){
  const leafGeo=new THREE.IcosahedronGeometry(7,0);
  const trunkMat=new THREE.MeshLambertMaterial({color:'#6b5a3d'});
  const leaves=[
-  new THREE.MeshLambertMaterial({color:'#3d643d',flatShading:true}),
-  new THREE.MeshLambertMaterial({color:'#527444',flatShading:true}),
-  new THREE.MeshLambertMaterial({color:'#668352',flatShading:true}),
-  new THREE.MeshLambertMaterial({color:'#426b59',flatShading:true})
+  new THREE.MeshLambertMaterial({color:'#355c37',flatShading:true}),
+  new THREE.MeshLambertMaterial({color:'#456a3d',flatShading:true}),
+  new THREE.MeshLambertMaterial({color:'#5b7548',flatShading:true}),
+  new THREE.MeshLambertMaterial({color:'#3f6752',flatShading:true})
  ];
- const max=6500,trees=[];
+ // Plus de semis uniforme : les arbres se regroupent en massifs lisibles,
+ // avec quelques lisières et bosquets secondaires.
+ const clusters=[
+  {x:350,z:360,rx:290,rz:250,density:1.00},
+  {x:760,z:330,rx:235,rz:185,density:.80},
+  {x:520,z:980,rx:180,rz:240,density:.54},
+  {x:1500,z:700,rx:180,rz:155,density:.34},
+  {x:1710,z:980,rx:220,rz:170,density:.38}
+ ];
+ const max=2850,trees=[];
  let attempt=0;
- while(trees.length<max&&attempt<max*3){
-  let x=random(attempt,707,81)*2048,z=random(attempt,811,41)*2048;
-  attempt++;
-  if(geo.isSea(x,z)||isLake(x,z)||geo.riverDistance(x,z)<20||streamDist(x,z)<15)continue;
-  if(geo.sites.some(p=>Math.abs(p.x-x)<20&&Math.abs(p.z-z)<20))continue;
-  const region=geo.region(x,z),chance=region==='garrigue'?.42:region==='causse'?.34:
-   region==='ruffes'?.26:region==='vignes'?.28:region==='riverside'?.76:region==='coast'?.19:.65;
-  if(random(x|0,z|0,103)>chance)continue;
+ while(trees.length<max&&attempt<max*7){
+  const ci=Math.floor(random(attempt,907,12)*clusters.length),C=clusters[ci];
+  const a=random(attempt,401,71)*Math.PI*2,r=Math.sqrt(random(attempt,503,93));
+  let x=C.x+Math.cos(a)*C.rx*r,z=C.z+Math.sin(a)*C.rz*r;attempt++;
+  // Irrégularité des lisières.
+  x+=(noise(x,z,70,812)-.5)*55;z+=(noise(x,z,65,813)-.5)*45;
+  if(x<20||x>2028||z<20||z>2028||geo.isSea(x,z)||isLake(x,z)||geo.riverDistance(x,z)<28||streamDist(x,z)<18)continue;
+  if(geo.sites.some(p=>Math.abs(p.x-x)<24&&Math.abs(p.z-z)<24))continue;
+  const region=geo.region(x,z);
+  const allowed=region==='causse'?.28:region==='ruffes'?.18:region==='vignes'?.16:region==='riverside'?.48:.82;
+  if(random(x|0,z|0,103)>allowed*C.density)continue;
   let h=safeH(x,z);if(h<-1||h>195)continue;
-  let scale=.60+random(x|0,z|0,45)*1.35,variant=Math.min(leaves.length-1,Math.floor(random(x|0,z|0,76)*leaves.length));
+  let scale=.64+random(x|0,z|0,45)*1.18,variant=Math.min(leaves.length-1,Math.floor(random(x|0,z|0,76)*leaves.length));
   trees.push({x,z,h,scale,variant});
  }
  const trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,trees.length);
- const groups=leaves.map((mat)=>new THREE.InstancedMesh(leafGeo,mat,Math.max(1,trees.filter(t=>t.variant===leaves.indexOf(mat)).length)));
+ const groups=leaves.map((mat,idx)=>new THREE.InstancedMesh(leafGeo,mat,Math.max(1,trees.filter(t=>t.variant===idx).length)));
  const counts=[0,0,0,0],dummy=new THREE.Object3D();
  trees.forEach((t,i)=>{
-  if(!Number.isInteger(t.variant)||t.variant<0||t.variant>=groups.length)throw new Error('Indice de végétation invalide: '+t.variant);
   dummy.position.set(t.x,t.h+4*t.scale,t.z);dummy.rotation.y=random(t.x|0,t.z|0,98)*6.28;dummy.scale.set(t.scale,t.scale,t.scale);dummy.updateMatrix();
   trunks.setMatrixAt(i,dummy.matrix);
   dummy.position.y=t.h+12.5*t.scale;dummy.scale.set(t.scale,t.scale*.75,t.scale);dummy.updateMatrix();
@@ -258,6 +280,29 @@ function createForest(){
  trunks.instanceMatrix.needsUpdate=true;scene.add(trunks);
  for(let i=0;i<4;i++){groups[i].count=counts[i];groups[i].instanceMatrix.needsUpdate=true;scene.add(groups[i]);}
  natureObjects=[trunks,...groups];return trees.length;
+}
+function createResourceZones(){
+ const dummy=new THREE.Object3D();
+ const defs={
+  stone:{geo:new THREE.DodecahedronGeometry(5,0),mat:new THREE.MeshStandardMaterial({color:'#8f8d84',roughness:1}),count:95},
+  gold:{geo:new THREE.DodecahedronGeometry(4.2,0),mat:new THREE.MeshStandardMaterial({color:'#a78242',roughness:.85,metalness:.18}),count:54},
+  food:{geo:new THREE.SphereGeometry(3.1,5,4),mat:new THREE.MeshStandardMaterial({color:'#9b8e4e',roughness:1}),count:80},
+  hunt:{geo:new THREE.ConeGeometry(2.2,7,5),mat:new THREE.MeshStandardMaterial({color:'#8b7654',roughness:1}),count:52}
+ };
+ for(const zone of RESOURCE_ZONES){
+  if(zone.kind==='wood')continue;
+  const d=defs[zone.kind];if(!d)continue;
+  const pts=[];
+  for(let i=0;i<d.count*4&&pts.length<d.count;i++){
+   const a=random(i,zone.x|0,771)*Math.PI*2,r=Math.sqrt(random(i,zone.z|0,772));
+   const x=zone.x+Math.cos(a)*zone.rx*r,z=zone.z+Math.sin(a)*zone.rz*r;
+   if(x<20||x>2028||z<20||z>2028||geo.isSea(x,z)||isLake(x,z)||geo.riverDistance(x,z)<22)continue;
+   pts.push({x,z});
+  }
+  const mesh=new THREE.InstancedMesh(d.geo,d.mat,pts.length);
+  pts.forEach((p,i)=>{const y=safeH(p.x,p.z);dummy.position.set(p.x,y+2.2,p.z);dummy.rotation.set(random(i,1,1)*.4,random(i,2,2)*6.28,random(i,3,3)*.4);const sc=.7+random(i,4,4)*1.2;dummy.scale.set(sc,sc,sc);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});
+  mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);natureObjects.push(mesh);
+ }
 }
 function createVineyards(){
  const mat=new THREE.MeshStandardMaterial({color:'#52794b',roughness:1});
@@ -291,18 +336,27 @@ function createDam(){
  structure.position.set(x,y,z);structure.rotation.y=.24;scene.add(structure);
 }
 function createBridges(){
- for(const id of ['pont-diable','pont-canet']){
-  const p=geo.landmark(id);if(!p)continue;
-  const y=safeH(p.x,p.z);
+ const candidates=geo.sites.filter(p=>p.kind==='pont');
+ // Les ponts existants du plan v0.8 + passages lisibles sur l'axe de l'Hérault.
+ const list=candidates.length?candidates:[
+  geo.landmark('pont-diable'),geo.landmark('pont-canet')
+ ].filter(Boolean);
+ for(const p of list){
+  const y=Math.max(-1,safeH(p.x,p.z));
   const group=new THREE.Group();
-  const deck=new THREE.Mesh(new THREE.BoxGeometry(54,4,9),new THREE.MeshStandardMaterial({color:'#d6c9ae',roughness:1}));
-  deck.position.y=10;group.add(deck);
-  for(const dx of [-22,-10,10,22]){
-   const support=new THREE.Mesh(new THREE.CylinderGeometry(3.5,4.3,22,6),new THREE.MeshStandardMaterial({color:'#afa78f'}));
-   support.position.set(dx,-1.5,0);group.add(support);
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(62,4.8,11),new THREE.MeshStandardMaterial({color:'#d9ccb0',roughness:1}));
+  deck.position.y=9;group.add(deck);
+  const archMat=new THREE.MeshStandardMaterial({color:'#b4aa91',roughness:1});
+  for(const dx of [-24,-8,8,24]){
+   const support=new THREE.Mesh(new THREE.CylinderGeometry(3.8,4.8,21,7),archMat);
+   support.position.set(dx,-1,0);group.add(support);
   }
+  // tablier clair + piles hautes : visible même à moyenne distance.
   group.position.set(p.x,y,p.z);
-  group.rotation.y=.25;
+  // orientation approximative perpendiculaire au fleuve local
+  const eps=12,a=geo.riverDistance(p.x-eps,p.z),b=geo.riverDistance(p.x+eps,p.z),
+        c=geo.riverDistance(p.x,p.z-eps),d=geo.riverDistance(p.x,p.z+eps);
+  group.rotation.y=Math.abs(a-b)>Math.abs(c-d)?0:Math.PI/2;
   scene.add(group);
  }
 }
@@ -481,7 +535,7 @@ async function main(){
  setProgress('Ajout du lac, du barrage, du fleuve et des ponts…',50);
  createWater();createBridges();createDam();createRoads();
  setProgress('Peuplement des villages, vignobles et forêts…',74);
- createSettlements();const countTrees=createForest();createVineyards();
+ createSettlements();const countTrees=createForest();createVineyards();createResourceZones();
  setProgress('Placement des 31 lieux géographiques…',92);
  createLandmarkPins();drawMini();
  const frameKeys=controller();
@@ -489,7 +543,7 @@ async function main(){
   renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();}
  addEventListener('resize',resize);resize();
  $('info').textContent='31 sites géographiques, '+countTrees.toLocaleString('fr-FR')+
-  ' arbres 3D et 7 itinéraires. Les lieux proviennent de la carte v0.8.';
+  ' arbres 3D regroupés en massifs, Hérault renforcé, ponts et zones de ressources. Les 31 lieux proviennent de la carte v0.8.';
  setProgress('Bienvenue dans les Terres des Sales Fils.',100);
  setTimeout(()=>{loading.style.display='none'},330);
  flyTo('campagnan');
