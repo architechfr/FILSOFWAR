@@ -137,8 +137,8 @@
     var out=originalDecor.call(this,col,row),game=carte.courant;
     if(!game||!game.terroirs||!secteurs)return out;
     var s=voisin(col*64+32,row*64+32,secteurs),b=game.terroirs[s.id]||'prairie';
-    var dens={vallee:[4,27,7],foret:[10,60,5],prairie:[4,38,5],
-              causses:[2,21,23],ruffes:[2,26,20],rives:[7,54,7]}[b]||[4,32,8];
+    var dens={vallee:[2,27,7],foret:[5,60,5],prairie:[2,38,5],
+              causses:[1,21,23],ruffes:[1,26,20],rives:[3,54,7]}[b]||[2,32,8];
     var r=hasard(hash(col,row,game.seed^0x2f18d3e7)), x0=col*64,z0=row*64;
     function admissible(x,z,grand){
       if(x<9||z<9||x>759||z>759)return false;
