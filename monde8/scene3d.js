@@ -11,6 +11,13 @@ const mix=(a,b,t)=>a+(b-a)*t;
 const smooth=t=>t*t*(3-2*t);
 const lerp=(a,b,t)=>a+(b-a)*t;
 const SEED=2026;
+const BASE=2048;
+const worldW=()=>geo?.worldWidth||5120;
+const worldH=()=>geo?.worldHeight||3584;
+const sx=v=>v*worldW()/BASE;
+const sz=v=>v*worldH()/BASE;
+const sxLen=v=>v*worldW()/BASE;
+const szLen=v=>v*worldH()/BASE;
 const random=(x,z,s=0)=>{
  let a=Math.imul((x|0)^SEED,0x45d9f3b)^Math.imul((z|0)+s,0x119de1f3);
  a=Math.imul(a^(a>>>16),0x45d9f3b);
@@ -39,25 +46,25 @@ const RESOURCE_ZONES=[
  {name:'Filons des Ruffes',kind:'gold',x:850,z:760,rx:190,rz:150},
  {name:'Garrigues sauvages',kind:'hunt',x:1630,z:850,rx:280,rz:220},
  {name:'Vallée agricole',kind:'food',x:1120,z:1260,rx:390,rz:220}
-];
+].map(z=>({...z,x:sx(z.x),z:sz(z.z),rx:sxLen(z.rx),rz:szLen(z.rz)}));
 function peak(x,z,cx,cz,h,rx,rz){
  const dx=(x-cx)/rx,dz=(z-cz)/rz,k=dx*dx+dz*dz;
  return k<1?h*Math.pow(1-k,1.7):0;
 }
 function isLake(x,z){
- const lx=geo.lake.x,lz=geo.lake.z,a=(x-lx)/190,b=(z-lz)/146;
+ const lx=geo.lake.x,lz=geo.lake.z,a=(x-lx)/sxLen(190),b=(z-lz)/szLen(146);
  const dist=a*a+b*b,wiggle=.12*Math.sin(a*5.2+b*3)+.08*Math.sin(a*8-b*4);
- const east=Math.pow((x-lx-129)/87,2)+Math.pow((z-lz+43)/82,2);
- const west=Math.pow((x-lx+116)/91,2)+Math.pow((z-lz-21)/75,2);
+ const east=Math.pow((x-lx-sxLen(129))/sxLen(87),2)+Math.pow((z-lz+szLen(43))/szLen(82),2);
+ const west=Math.pow((x-lx+sxLen(116))/sxLen(91),2)+Math.pow((z-lz-szLen(21))/szLen(75),2);
  return dist<1+wiggle||east<1.02||west<1.01;
 }
 function nearLake(x,z){
- const dx=(x-geo.lake.x)/202,dz=(z-geo.lake.z)/154;
+ const dx=(x-geo.lake.x)/sxLen(202),dz=(z-geo.lake.z)/szLen(154);
  return Math.hypot(dx,dz);
 }
 function streamDist(x,z){
  const lx=geo.lake.x,lz=geo.lake.z;
- const from={x:lx+51,z:lz+165},to=geo.xy(43.607,3.495);
+ const from={x:lx+sxLen(51),z:lz+szLen(165)},to=geo.xy(43.607,3.495);
  const dx=to.x-from.x,dz=to.z-from.z;
  const t=clamp(((x-from.x)*dx+(z-from.z)*dz)/(dx*dx+dz*dz),0,1);
  return Math.hypot(x-from.x-dx*t,z-from.z-dz*t);
@@ -71,13 +78,13 @@ function elevation(x,z){
  const gorges=geo.landmark('gorges');
  const lodeve=geo.landmark('lodeve');
  let h=r+
-   peak(x,z,sl.x,sl.z,215,230,215)+
-   peak(x,z,gorges.x-40,gorges.z-100,95,160,190)+
-   peak(x,z,lodeve.x-40,lodeve.z-65,115,230,250)+
-   peak(x,z,500,250,138,350,290)+
-   peak(x,z,360,750,76,245,200)+
-   peak(x,z,1250,470,54,220,180)+
-   peak(x,z,730,1020,39,160,140);
+   peak(x,z,sl.x,sl.z,215,sxLen(230),szLen(215))+
+   peak(x,z,gorges.x-sxLen(40),gorges.z-szLen(100),95,sxLen(160),szLen(190))+
+   peak(x,z,lodeve.x-sxLen(40),lodeve.z-szLen(65),115,sxLen(230),szLen(250))+
+   peak(x,z,sx(500),sz(250),138,sxLen(350),szLen(290))+
+   peak(x,z,sx(360),sz(750),76,sxLen(245),szLen(200))+
+   peak(x,z,sx(1250),sz(470),54,sxLen(220),szLen(180))+
+   peak(x,z,sx(730),sz(1020),39,sxLen(160),szLen(140));
  const coastalDist=sea-z;
  if(coastalDist<185)h*=smooth(clamp(coastalDist/185,0,1))*.67+ .05;
  if(isLake(x,z))return -12;
@@ -86,40 +93,40 @@ function elevation(x,z){
    h=mix(3.5,h,valley);
  }
  const rd=geo.riverDistance(x,z);
- if(rd<48){
-   const t=smooth(clamp(rd/48,0,1));
+ if(rd<sxLen(48)){
+   const t=smooth(clamp(rd/sxLen(48),0,1));
    h=mix(-10,h,t);
  }
  const sd=streamDist(x,z);
- if(sd<22&&x>geo.lake.x){
-   h=mix(-8,h,smooth(clamp(sd/22,0,1)));
+ if(sd<sxLen(22)&&x>geo.lake.x){
+   h=mix(-8,h,smooth(clamp(sd/sxLen(22),0,1)));
  }
  if(geo.isSea(x,z))return -11;
  return h;
 }
-function safeH(x,z){return elevation(clamp(x,0,2048),clamp(z,0,2048));}
+function safeH(x,z){return elevation(clamp(x,0,worldW()),clamp(z,0,worldH()));}
 function landmarkY(p){return safeH(p.x,p.z)+5;}
 const vtmp=new THREE.Vector3();
 function createTerrain(){
- const N=192,positions=new Float32Array((N+1)*(N+1)*3);
- const c=new Float32Array((N+1)*(N+1)*3),index=[];
+ const NX=256,NZ=180,positions=new Float32Array((NX+1)*(NZ+1)*3);
+ const c=new Float32Array((NX+1)*(NZ+1)*3),index=[];
  const color=new THREE.Color(),palette={};
  Object.entries(colors).forEach(([k,v])=>palette[k]=new THREE.Color(v));
  const white=new THREE.Color('#f0e3bd');
- for(let z=0;z<=N;z++)for(let x=0;x<=N;x++){
-  let xx=x*2048/N,zz=z*2048/N,i=(z*(N+1)+x)*3,h=elevation(xx,zz);
+ for(let z=0;z<=NZ;z++)for(let x=0;x<=NX;x++){
+  let xx=x*worldW()/NX,zz=z*worldH()/NZ,i=(z*(NX+1)+x)*3,h=elevation(xx,zz);
   positions[i]=xx;positions[i+1]=h;positions[i+2]=zz;
   let b=geo.region(xx,zz);
   color.copy(palette[b]||palette.prairie);
-  const n=noise(xx,zz,93,42),t=(n-.5)*.19,rock=clamp((h-68)/140,0,.50);
+  const n=noise(xx,zz,sxLen(93),42),t=(n-.5)*.19,rock=clamp((h-68)/140,0,.50);
   if(b==='ruffes')color.lerp(palette.causse,clamp((h-45)/150,0,.40));
   color.lerp(white,rock*.65);
   color.multiplyScalar(clamp(1+t,.75,1.22));
-  if(geo.isSea(xx,zz)||isLake(xx,zz)||geo.riverDistance(xx,zz)<11)color.set('#586961');
+  if(geo.isSea(xx,zz)||isLake(xx,zz)||geo.riverDistance(xx,zz)<sxLen(14))color.set('#586961');
   c.set([color.r,color.g,color.b],i);
  }
- for(let z=0;z<N;z++)for(let x=0;x<N;x++){
-  const a=z*(N+1)+x,b=a+1,d=(z+1)*(N+1)+x,e=d+1;
+ for(let z=0;z<NZ;z++)for(let x=0;x<NX;x++){
+  const a=z*(NX+1)+x,b=a+1,d=(z+1)*(NX+1)+x,e=d+1;
   index.push(a,d,b,b,d,e);
  }
  const g=new THREE.BufferGeometry();
@@ -134,7 +141,7 @@ function lakeShape(){
  const cx=geo.lake.x,cz=geo.lake.z;
  // Build mesh from sampled lake mask rather than a fake blue circle.
  // All visible surfaces share the same isLake predicate.
- const step=8,loX=Math.max(0,cx-335),hiX=Math.min(2048,cx+335),loZ=Math.max(0,cz-250),hiZ=Math.min(2048,cz+250);
+ const step=12,loX=Math.max(0,cx-sxLen(335)),hiX=Math.min(worldW(),cx+sxLen(335)),loZ=Math.max(0,cz-szLen(250)),hiZ=Math.min(worldH(),cz+szLen(250));
  const vertices=[],indices=[];
  for(let z=loZ;z<hiZ;z+=step)for(let x=loX;x<hiX;x+=step){
   const corners=[[x,z],[x+step,z],[x,z+step],[x+step,z+step]];
@@ -151,7 +158,7 @@ function createWater(){
  const lakeMaterial=new THREE.MeshPhysicalMaterial({color:0x4b9b9c,roughness:.24,metalness:.04,transparent:true,opacity:.88,side:THREE.DoubleSide});
  const lakeMesh=new THREE.Mesh(lakeShape(),lakeMaterial);scene.add(lakeMesh);
  const seaShape=new THREE.Shape();
- seaShape.moveTo(0,2048);seaShape.lineTo(2048,2048);
+ seaShape.moveTo(0,worldH());seaShape.lineTo(worldW(),worldH());
  for(let i=geo.coast.length-1;i>=0;i--)seaShape.lineTo(geo.coast[i].x,geo.coast[i].z);
  seaShape.closePath();
  const seaGeo=new THREE.ShapeGeometry(seaShape,12);
@@ -163,7 +170,7 @@ function createWater(){
  ribbon(geo.river,14,'#4f9eb4',-1.7);
  // Deux bandes de berge renforcent visuellement la vallée sans créer d'obstacle.
  ribbon(geo.river,19,'#6f9870',-2.35);
- const origin={x:geo.lake.x+50,z:geo.lake.z+170},out=geo.xy(43.607,3.495);
+ const origin={x:geo.lake.x+sxLen(50),z:geo.lake.z+szLen(170)},out=geo.xy(43.607,3.495);
  ribbon([origin,{x:origin.x+48,z:origin.z+65},{x:out.x-19,z:out.z-25},out],6.5,'#72b7ba',-1.95);
 }
 function ribbon(points,width,hex,fixedY=null){
@@ -195,7 +202,7 @@ function createRoads(){
   const sampled=[];
   for(let i=0;i<=Math.max(20,road.points.length*10);i++){
    const p=curve.getPoint(i/Math.max(20,road.points.length*10));
-   const x=clamp(p.x,0,2048),z=clamp(p.z,0,2048);
+   const x=clamp(p.x,0,worldW()),z=clamp(p.z,0,worldH());
    if(!geo.isSea(x,z)&&!isLake(x,z))sampled.push({x,z});
   }
   if(sampled.length>1)ribbon(sampled,road.type==='port'?2.1:2.6,col);
@@ -221,7 +228,7 @@ function createSettlements(){
   const n=big?23:small?3:10;
   for(let i=0;i<n;i++){
    const angle=(i*2.39996),radius=(i?6+Math.sqrt(i)*9:0),xx=p.x+Math.cos(angle)*radius,zz=p.z+Math.sin(angle)*radius;
-   if(xx<0||xx>2048||zz<0||zz>2048||geo.isSea(xx,zz)||isLake(xx,zz)||geo.riverDistance(xx,zz)<12)continue;
+   if(xx<0||xx>worldW()||zz<0||zz>worldH()||geo.isSea(xx,zz)||isLake(xx,zz)||geo.riverDistance(xx,zz)<12)continue;
    const scale=(big?1.3:1)*(.63+random(i,p.x|0,319)*.6);
    const building=new THREE.Mesh(stoneShape,stone);building.position.set(xx,safeH(xx,zz)+5*scale,zz);
    building.scale.set(scale,scale,scale);building.rotation.y=random(i,p.z|0,100)*6.28;
@@ -245,11 +252,11 @@ function createForest(){
  // Plus de semis uniforme : les arbres se regroupent en massifs lisibles,
  // avec quelques lisières et bosquets secondaires.
  const clusters=[
-  {x:350,z:360,rx:290,rz:250,density:1.00},
-  {x:760,z:330,rx:235,rz:185,density:.80},
-  {x:520,z:980,rx:180,rz:240,density:.54},
-  {x:1500,z:700,rx:180,rz:155,density:.34},
-  {x:1710,z:980,rx:220,rz:170,density:.38}
+  {x:sx(350),z:sz(360),rx:sxLen(290),rz:szLen(250),density:1.00},
+  {x:sx(760),z:sz(330),rx:sxLen(235),rz:szLen(185),density:.80},
+  {x:sx(520),z:sz(980),rx:sxLen(180),rz:szLen(240),density:.54},
+  {x:sx(1500),z:sz(700),rx:sxLen(180),rz:szLen(155),density:.34},
+  {x:sx(1710),z:sz(980),rx:sxLen(220),rz:szLen(170),density:.38}
  ];
  const max=2850,trees=[];
  let attempt=0;
@@ -258,8 +265,8 @@ function createForest(){
   const a=random(attempt,401,71)*Math.PI*2,r=Math.sqrt(random(attempt,503,93));
   let x=C.x+Math.cos(a)*C.rx*r,z=C.z+Math.sin(a)*C.rz*r;attempt++;
   // Irrégularité des lisières.
-  x+=(noise(x,z,70,812)-.5)*55;z+=(noise(x,z,65,813)-.5)*45;
-  if(x<20||x>2028||z<20||z>2028||geo.isSea(x,z)||isLake(x,z)||geo.riverDistance(x,z)<28||streamDist(x,z)<18)continue;
+  x+=(noise(x,z,sxLen(70),812)-.5)*sxLen(55);z+=(noise(x,z,szLen(65),813)-.5)*szLen(45);
+  if(x<20||x>worldW()-20||z<20||z>worldH()-20||geo.isSea(x,z)||isLake(x,z)||geo.riverDistance(x,z)<sxLen(28)||streamDist(x,z)<sxLen(18))continue;
   if(geo.sites.some(p=>Math.abs(p.x-x)<24&&Math.abs(p.z-z)<24))continue;
   const region=geo.region(x,z);
   const allowed=region==='causse'?.28:region==='ruffes'?.18:region==='vignes'?.16:region==='riverside'?.48:.82;
@@ -296,7 +303,7 @@ function createResourceZones(){
   for(let i=0;i<d.count*4&&pts.length<d.count;i++){
    const a=random(i,zone.x|0,771)*Math.PI*2,r=Math.sqrt(random(i,zone.z|0,772));
    const x=zone.x+Math.cos(a)*zone.rx*r,z=zone.z+Math.sin(a)*zone.rz*r;
-   if(x<20||x>2028||z<20||z>2028||geo.isSea(x,z)||isLake(x,z)||geo.riverDistance(x,z)<22)continue;
+   if(x<20||x>worldW()-20||z<20||z>worldH()-20||geo.isSea(x,z)||isLake(x,z)||geo.riverDistance(x,z)<sxLen(22))continue;
    pts.push({x,z});
   }
   const mesh=new THREE.InstancedMesh(d.geo,d.mat,pts.length);
@@ -308,11 +315,11 @@ function createVineyards(){
  const mat=new THREE.MeshStandardMaterial({color:'#52794b',roughness:1});
  const geoBox=new THREE.BoxGeometry(2,2.4,5);
  const dummy=new THREE.Object3D();const positions=[];
- for(let x=490;x<1510;x+=36)for(let z=1040;z<1450;z+=29){
+ for(let x=sx(490);x<sx(1510);x+=sxLen(36))for(let z=sz(1040);z<sz(1450);z+=szLen(29)){
   const region=geo.region(x,z);if(region!=='vignes')continue;
   for(let row=0;row<3;row++)for(let c=0;c<4;c++){
-   const xx=x+c*6,zz=z+row*7;
-   if(isLake(xx,zz)||geo.isSea(xx,zz)||geo.riverDistance(xx,zz)<17)continue;
+   const xx=x+c*sxLen(6),zz=z+row*szLen(7);
+   if(isLake(xx,zz)||geo.isSea(xx,zz)||geo.riverDistance(xx,zz)<sxLen(17))continue;
    positions.push({x:xx,z:zz});
   }
  }
@@ -325,7 +332,7 @@ function createVineyards(){
 }
 function createDam(){
  const cx=geo.lake.x,cz=geo.lake.z;
- const x=cx+49,z=cz+161,y=Math.max(2,safeH(x,z));
+ const x=cx+sxLen(49),z=cz+szLen(161),y=Math.max(2,safeH(x,z));
  const structure=new THREE.Group();
  const deck=new THREE.Mesh(new THREE.BoxGeometry(65,7,14),new THREE.MeshStandardMaterial({color:'#b5ae9c',roughness:.86}));
  deck.position.y=9;structure.add(deck);
@@ -372,31 +379,31 @@ function createLandmarkPins(){
  }
 }
 function drawMini(){
- const cv=$('mini'),g=cv.getContext('2d'),N=cv.width;
- const data=g.createImageData(N,N);
+ const cv=$('mini'),g=cv.getContext('2d'),MW=cv.width,MH=cv.height;
+ const data=g.createImageData(MW,MH);
  const palette={
- ruffes:[161,89,65],causse:[151,149,124],garrigue:[104,139,94],
- riverside:[90,157,135],prairie:[134,160,99],vignes:[144,153,91],
- coast:[209,192,147],sea:[67,145,169]
+  ruffes:[161,89,65],causse:[151,149,124],garrigue:[104,139,94],
+  riverside:[90,157,135],prairie:[134,160,99],vignes:[144,153,91],
+  coast:[209,192,147],sea:[67,145,169]
  };
- for(let z=0;z<N;z++)for(let x=0;x<N;x++){
-  const xx=x*2048/N,zz=z*2048/N;
+ for(let py=0;py<MH;py++)for(let px=0;px<MW;px++){
+  const xx=px*worldW()/MW,zz=py*worldH()/MH;
   const rgb=isLake(xx,zz)?[67,147,153]:palette[geo.region(xx,zz)];
-  const i=(z*N+x)*4;data.data[i]=rgb[0];data.data[i+1]=rgb[1];data.data[i+2]=rgb[2];data.data[i+3]=255;
+  const i=(py*MW+px)*4;data.data[i]=rgb[0];data.data[i+1]=rgb[1];data.data[i+2]=rgb[2];data.data[i+3]=255;
  }
  g.putImageData(data,0,0);
  for(const p of geo.important){
   g.beginPath();g.fillStyle='#f5db9e';g.strokeStyle='#15241d';g.lineWidth=1.5;
-  g.arc(p.x/2048*N,p.z/2048*N,2.7,0,Math.PI*2);g.fill();g.stroke();
+  g.arc(p.x/worldW()*MW,p.z/worldH()*MH,2.7,0,Math.PI*2);g.fill();g.stroke();
  }
 }
 function updateMini(){
- const cv=$('mini'),g=cv.getContext('2d'),N=cv.width;
- if(!updateMini.background){updateMini.background=g.getImageData(0,0,N,N);}
+ const cv=$('mini'),g=cv.getContext('2d'),MW=cv.width,MH=cv.height;
+ if(!updateMini.background){updateMini.background=g.getImageData(0,0,MW,MH);}
  g.putImageData(updateMini.background,0,0);
  g.beginPath();g.strokeStyle='#fff7dc';g.lineWidth=2;
- g.arc(target.x/2048*N,target.z/2048*N,4.2,0,Math.PI*2);g.stroke();
- const ax=target.x/2048*N,az=target.z/2048*N;
+ g.arc(target.x/worldW()*MW,target.z/worldH()*MH,4.2,0,Math.PI*2);g.stroke();
+ const ax=target.x/worldW()*MW,az=target.z/worldH()*MH;
  g.beginPath();g.moveTo(ax,az);
  g.lineTo(ax+Math.cos(yaw)*11,az+Math.sin(yaw)*11);g.stroke();
 }
@@ -462,7 +469,7 @@ function controller(){
   }else if(touches.size===2){
    const p=[...touches.values()];
    const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
-   if(lastTouch!=null)desiredDistance=clamp(desiredDistance*lastTouch/Math.max(1,d),100,2050);
+   if(lastTouch!=null)desiredDistance=clamp(desiredDistance*lastTouch/Math.max(1,d),100,5200);
    lastTouch=d;
    desiredYaw-=dx*.002;
   }
@@ -470,7 +477,7 @@ function controller(){
  });
  const stop=e=>{touches.delete(e.pointerId);if(touches.size<2)lastTouch=null;};
  c.addEventListener('pointerup',stop);c.addEventListener('pointercancel',stop);
- c.addEventListener('wheel',e=>{e.preventDefault();desiredDistance=clamp(desiredDistance*(e.deltaY>0?1.105:.91),95,2050);cameraTouched=true;},{passive:false});
+ c.addEventListener('wheel',e=>{e.preventDefault();desiredDistance=clamp(desiredDistance*(e.deltaY>0?1.105:.91),95,5200);cameraTouched=true;},{passive:false});
  const keys=new Set();
  window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;keys.add(e.key.toLowerCase());});
  window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -480,25 +487,25 @@ function controller(){
   const side=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('q')||keys.has('arrowleft')?1:0);
   desiredTarget.x+=(-forward*Math.sin(desiredYaw)+side*Math.cos(desiredYaw))*delta;
   desiredTarget.z+=(-forward*Math.cos(desiredYaw)-side*Math.sin(desiredYaw))*delta;
-  if(keys.has('r'))desiredDistance=clamp(desiredDistance-dt*desiredDistance,95,2050);
-  if(keys.has('f'))desiredDistance=clamp(desiredDistance+dt*desiredDistance,95,2050);
+  if(keys.has('r'))desiredDistance=clamp(desiredDistance-dt*desiredDistance,95,5200);
+  if(keys.has('f'))desiredDistance=clamp(desiredDistance+dt*desiredDistance,95,5200);
  }
- $('zoomIn').addEventListener('click',()=>{desiredDistance=clamp(desiredDistance*.75,95,2050)});
- $('zoomOut').addEventListener('click',()=>{desiredDistance=clamp(desiredDistance*1.3,95,2050)});
- $('reset').addEventListener('click',()=>{desiredTarget.set(1060,0,1010);desiredDistance=1310;desiredPitch=1.04;desiredYaw=-.52});
+ $('zoomIn').addEventListener('click',()=>{desiredDistance=clamp(desiredDistance*.75,95,5200)});
+ $('zoomOut').addEventListener('click',()=>{desiredDistance=clamp(desiredDistance*1.3,95,5200)});
+ $('reset').addEventListener('click',()=>{desiredTarget.set(sx(1060),0,sz(1010));desiredDistance=3100;desiredPitch=1.04;desiredYaw=-.52});
  [['bLake','lake'],['bDam','dam'],['bPeak','peak'],['bGorges','gorges']].forEach(([btn,id])=>$(btn)?.addEventListener('click',()=>flyTo(id)));
  document.querySelectorAll('[data-fly]').forEach(el=>el.addEventListener('click',()=>flyTo(el.dataset.fly)));
  $('minimap').addEventListener('click',e=>{const r=$('minimap').getBoundingClientRect();
-  desiredTarget.x=clamp((e.clientX-r.left)/r.width*2048,0,2048);
-  desiredTarget.z=clamp((e.clientY-r.top)/r.height*2048,0,2048);desiredDistance=650;
+  desiredTarget.x=clamp((e.clientX-r.left)/r.width*worldW(),0,worldW());
+  desiredTarget.z=clamp((e.clientY-r.top)/r.height*worldH(),0,worldH());desiredDistance=1500;
  });
  return frameKeys;
 }
 function updateCamera(dt){
  const t=1-Math.exp(-dt*5.5);
  target.lerp(desiredTarget,t);yaw=lerp(yaw,desiredYaw,t);pitch=lerp(pitch,desiredPitch,t);distance=lerp(distance,desiredDistance,t);
- target.x=clamp(target.x,18,2030);target.z=clamp(target.z,18,2030);
- desiredTarget.x=clamp(desiredTarget.x,18,2030);desiredTarget.z=clamp(desiredTarget.z,18,2030);
+ target.x=clamp(target.x,18,worldW()-18);target.z=clamp(target.z,18,worldH()-18);
+ desiredTarget.x=clamp(desiredTarget.x,18,worldW()-18);desiredTarget.z=clamp(desiredTarget.z,18,worldH()-18);
  const base=safeH(target.x,target.z);
  const h=Math.max(base,target.y);
  camera.position.set(target.x+distance*Math.sin(pitch)*Math.sin(yaw),
@@ -528,14 +535,14 @@ async function main(){
  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
  renderer.setClearColor(new THREE.Color('#b4cad0'));
  scene=new THREE.Scene();scene.background=new THREE.Color('#b4cad0');scene.fog=new THREE.FogExp2('#bfd1ca',.00056);
- camera=new THREE.PerspectiveCamera(50,1,1,7500);
+ camera=new THREE.PerspectiveCamera(50,1,1,12000);
  scene.add(new THREE.HemisphereLight(0xe0efff,0x5e7356,2.0));
  const sun=new THREE.DirectionalLight(0xfff0c9,2.5);sun.position.set(-550,1100,-420);scene.add(sun);
  createTerrain();
  setProgress('Ajout du lac, du barrage, du fleuve et des ponts…',50);
  createWater();createBridges();createDam();createRoads();
  setProgress('Peuplement des villages, vignobles et forêts…',74);
- createSettlements();const countTrees=createForest();createVineyards();createResourceZones();
+ const countTrees=createForest();createVineyards();createResourceZones();
  setProgress('Placement des 31 lieux géographiques…',92);
  createLandmarkPins();drawMini();
  const frameKeys=controller();
@@ -543,11 +550,11 @@ async function main(){
   renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();}
  addEventListener('resize',resize);resize();
  $('info').textContent='31 sites géographiques, '+countTrees.toLocaleString('fr-FR')+
-  ' arbres 3D regroupés en massifs, Hérault renforcé, ponts et zones de ressources. Les 31 lieux proviennent de la carte v0.8.';
+  ' arbres 3D regroupés en massifs, Hérault, ponts et zones naturelles. Continent vierge : aucun village préconstruit. Les 31 lieux servent de repères géographiques.';
  setProgress('Bienvenue dans les Terres des Sales Fils.',100);
  setTimeout(()=>{loading.style.display='none'},330);
  flyTo('campagnan');
- desiredDistance=1020;desiredTarget.set(1150,0,1040);
+ desiredDistance=2500;desiredTarget.set(sx(1150),0,sz(1040));
  let last=performance.now(),counter=0;
  function tick(now){
   requestAnimationFrame(tick);
