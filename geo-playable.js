@@ -67,6 +67,13 @@ function riverZ(x){
   }
   return RIVER[RIVER.length-1].z;
 }
+function coastX(z){
+  // Bande littorale volontairement courte pour garder le continent jouable :
+  // plage de 12-18 m puis mer sur l'extreme sud (x eleve apres rotation).
+  return 738+Math.sin(z*.018)*7+Math.sin(z*.006+1.3)*4;
+}
+function isSea(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&x>coastX(z);}
+function isBeach(x,z){var c=coastX(z);return x>c-16&&x<=c;}
 var BRIDGES=['pont-diable','pont-canet','ancien-barrage-belarga'].map(function(id){return Math.round(BY[id].x);});
 // Deux franchissements de gameplay supplementaires, places sur les axes commerciaux,
 // mais le plan distingue clairement les trois passages geographiques nommes.
@@ -77,5 +84,5 @@ function nearest(x,z,ids){
   for(var i=0;i<list.length;i++){var p=list[i],dx=x-p.x,dz=z-p.z,q=dx*dx+dz*dz;if(q<d){d=q;b=p;}}
   return b;
 }
-root.FOW_GEO_PLAYABLE=Object.freeze({SIZE:SIZE,bounds:BOUNDS,sites:SITES,byId:BY,river:RIVER,riverZ:riverZ,bridges:BRIDGES,xy:xy,nearest:nearest});
+root.FOW_GEO_PLAYABLE=Object.freeze({SIZE:SIZE,bounds:BOUNDS,sites:SITES,byId:BY,river:RIVER,riverZ:riverZ,bridges:BRIDGES,coastX:coastX,isSea:isSea,isBeach:isBeach,xy:xy,nearest:nearest});
 })(window);
