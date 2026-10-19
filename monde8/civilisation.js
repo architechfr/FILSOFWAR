@@ -98,6 +98,7 @@
     tradeVolume:0,festivals:0,sites:[],tech:[],research:null,
     envoyLast:{},festivalLast:-999,aiNext:31+i*5,lastConflict:0,archived:0
   }));
+  for(let i=0;i<8;i++)if(typeof base.setDoctrine==='function')base.setDoctrine(i,civs[i].focus);
   const relations=Array.from({length:8},(_,i)=>Array.from({length:8},(_,j)=>
     i===j?100:35+((world.seed+i*17+j*29+Math.min(i,j)*11)%21)));
   // Shared trust must be symmetric for fair diplomacy.
@@ -221,6 +222,7 @@
   function decideFocus(seat,route){
     if(!canAct(seat)||!CATEGORIES.includes(route))return {ok:false,error:'Voie inconnue'};
     civs[seat].focus=route;
+    if(typeof base.setDoctrine==='function')base.setDoctrine(seat,route);
     return {ok:true,focus:route};
   }
   function tickProjects(dt){
@@ -316,8 +318,7 @@
       if(!targetNeighbours.length)return false;
       if(f.age<2){
         if(!base.buildings().some(b=>b.owner===seat&&b.type==='upgrade'&&!b.complete)){
-          // Le moteur V2 n'expose pas encore de construction par siège pour l'IA civile.
-          return false;
+          return base.buildFor(seat,'townhall',home).ok;
         }
         return false;
       }
@@ -421,7 +422,10 @@
         throw Error('Sauvegarde de civilisation incompatible');
       base.load(obj.core);
       const p=obj.civilization;
-      for(let i=0;i<8;i++)Object.assign(civs[i],copy(p.civs[i]));
+      for(let i=0;i<8;i++){
+        Object.assign(civs[i],copy(p.civs[i]));
+        if(typeof base.setDoctrine==='function')base.setDoctrine(i,civs[i].focus);
+      }
       projects=copy(p.projects||[]);pacts=copy(p.pacts||[]);
       if(p.relations&&p.relations.length===8)for(let i=0;i<8;i++)relations[i]=p.relations[i].slice();
       winner=copy(p.winner);nextProject=p.nextProject||0;elapsedSecond=p.elapsedSecond||0;
