@@ -28,7 +28,7 @@ function create(world,nav,opts){
  var seed=world.seed,player=cap(opts.playerSeat|0,0,7),difficulty=opts.difficulty||'normal',dt=0;
  var people=[],towns=[],buildings=[],outposts=[],sectors=world.sectors.map(function(s){return {id:s.id,owner:-1,food:s.resources.food,wood:s.resources.wood,stone:s.resources.stone,gold:s.resources.gold};});
  var civs=world.capitals.map(function(c){
-  return {seat:c.seat,name:c.name,resources:{food:160,wood:180,stone:75,gold:20},age:1,home:null,
+  return {seat:c.seat,name:c.name,resources:{food:210,wood:260,stone:100,gold:35},age:1,home:null,
    units:0,popMax:12,isHuman:c.seat===player,score:0,started:false,aiNext:30+c.seat*3,alive:true};
  });
  var U=0,B=0,events=[],selected=null,clock=0,aiEnabled=opts.ai!==false,seedRand=(seed^0x6e6d5317)>>>0;
@@ -345,6 +345,8 @@ function create(world,nav,opts){
   if(activeWorkers<3&&awaiting<2)nextUnit(seat,'worker');
   else if(barracks&&soldiers.length<8&&awaiting<2)nextUnit(seat,f.age>1&&rand()<.3?'cavalry':rand()<.4?'archer':'soldier');
   var owns=sectors.filter(function(s){return s.owner===seat});
+  for(var ai=0;ai<units.length;ai++)if(units[ai].type==='worker'&&!units[ai].route){units[ai].task='gather';units[ai].gatherSector=nearestSector(units[ai].x,units[ai].z);}
+  if(!buildings.some(function(b){return b.owner===seat&&b.type==='sawmill';})&&f.resources.wood>=95&&f.resources.stone>=25)build(seat,'sawmill',f.home.sector);
   if(owns.length&&rand()<.28){
    var s=owns[Math.floor(rand()*owns.length)];
    if(!buildings.some(function(b){return b.owner===seat&&b.sector===s.id&&b.type==='farm'}))build(seat,'farm',s.id);
