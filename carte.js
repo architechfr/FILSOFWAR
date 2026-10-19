@@ -455,7 +455,8 @@
   }
   function montagneSalagou(x,z){
     // Cretes hors du plan d'eau, avec cols et deformations reproductibles.
-    var pics=[[129,120,17,46,33],[287,121,21,42,30],[302,255,15,39,28],[101,280,12,30,44]];
+    var pics=[[129,120,22,49,37],[287,121,26,44,35],[302,255,20,44,34],[101,280,18,39,47],
+              [351,89,42,54,42],[251,291,21,45,31],[71,199,22,39,42],[322,190,18,33,54]];
     var h=0;
     for(var i=0;i<pics.length;i++){
       var p=pics[i],dx=(x-p[0])/p[3],dz=(z-p[1])/p[4],d=dx*dx+dz*dz;
