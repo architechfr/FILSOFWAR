@@ -96,7 +96,7 @@
   const civs=base.civs.map((c,i)=>({
     seat:i,focus:AI_STYLE[i],knowledge:0,knowledgeEarned:0,prestige:0,influence:0,
     tradeVolume:0,festivals:0,sites:[],tech:[],research:null,
-    envoyLast:{},festivalLast:-999,aiNext:31+i*5,lastConflict:-999,archived:0
+    envoyLast:{},festivalLast:-999,aiNext:31+i*5,lastConflict:0,archived:0
   }));
   const relations=Array.from({length:8},(_,i)=>Array.from({length:8},(_,j)=>
     i===j?100:35+((world.seed+i*17+j*29+Math.min(i,j)*11)%21)));
@@ -179,6 +179,7 @@
     if(!canAct(seat)||!canAct(other)||other===seat)return {ok:false,error:'Partenaire indisponible'};
     if(!buildingOf(seat,'market'))return {ok:false,error:'Construis d’abord un marché'};
     if(relations[seat][other]<30)return {ok:false,error:'Relations commerciales insuffisantes'};
+    if(!buildingOf(other,'market'))return {ok:false,error:'Le partenaire doit avoir son propre marché'};
     if(pacts.some(p=>(p.a===seat&&p.b===other)||(p.a===other&&p.b===seat)))
       return {ok:false,error:'Une route commerciale existe déjà'};
     const cost={food:25,wood:18,gold:5};
@@ -271,7 +272,7 @@
     for(const pact of pacts){
       const a=pact.a,b=pact.b,A=base.civs[a],B=base.civs[b];
       if(!A.started||!B.started||A.alive===false||B.alive===false)continue;
-      if(!buildingOf(a,'market')&&!buildingOf(b,'market'))continue;
+      if(!buildingOf(a,'market')||!buildingOf(b,'market'))continue;
       const first=pact.deliveries%2===0?a:b,other=first===a?b:a;
       const from=base.civs[first].resources,to=base.civs[other].resources;
       if(from.food<3||from.wood<2)continue;
