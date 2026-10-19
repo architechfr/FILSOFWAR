@@ -60,6 +60,12 @@ function createLobby(opts){
    if(active.length<(minPlayers||2)||active.some(function(s){return !s.ready}))
      return {ok:false,error:'JOUEURS_PAS_PRETS'};
    status='running';turn=0;epoch++;
+   // Les premiers tours sont volontairement vides : delai de synchronisation.
+   for(var t=0;t<DELAY_TURNS;t++){
+     var empty=new Map();
+     for(var a=0;a<active.length;a++)empty.set(active[a].seat,{seq:-1,commands:[]});
+     orders.set(t,empty);
+   }
    return {ok:true,players:active.map(function(s){return {seat:s.seat,id:s.playerId};})};
  }
  function disconnect(playerId){
