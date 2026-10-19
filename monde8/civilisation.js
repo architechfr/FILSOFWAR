@@ -236,7 +236,7 @@
       // Les villages éloignés demandent le déplacement réel d'ouvriers.
       if(!workers){
         // Les ouvriers des IA voyagent vers les nouveaux villages, sans téléportation.
-        if(opts.ai!==false&&p.type==='settlement'&&p.owner!==owner){
+        if(opts.ai!==false&&p.owner!==owner){
           const worker=base.people().find(u=>u.owner===p.owner&&u.type==='worker'&&u.hp>0&&!u.route);
           if(worker){
             const route=base.nav.path('infanterie',worker.x,worker.z,p.x,p.z,{maxVisited:65536});
@@ -337,12 +337,34 @@
         build(seat,'settlement',id).ok)return true;
       return false;
     };
-    function tryBuilding(type){
-      if(!buildingOf(seat,type)&&!hasPending(seat,type))return build(seat,type,home).ok;
+    function tryBuilding(type,targetCount){
+      targetCount=targetCount||1;
+      const number=projects.filter(p=>p.owner===seat&&p.type===type).length;
+      if(number>=targetCount)return false;
+      const candidates=base.sectors().filter(t=>t.owner===seat).map(t=>t.id);
+      for(const id of candidates){
+        if(projects.some(p=>p.owner===seat&&p.type===type&&p.sector===id))continue;
+        if(build(seat,type,id).ok)return true;
+      }
+      return false;
+    }
+    function dispatchExpedition(){
+      const scout=base.people().find(u=>u.owner===seat&&u.type==='scout'&&u.hp>0&&!u.route);
+      if(!scout)return false;
+      const targets=world.landmarks.filter(p=>!c.sites.includes(p.name)).sort((a,b)=>
+        Math.hypot(scout.x-a.x,scout.z-a.z)-Math.hypot(scout.x-b.x,scout.z-b.z));
+      for(const land of targets){
+        const path=base.nav.path('cavalerie',scout.x,scout.z,land.x,land.z,{maxVisited:65536});
+        if(!path||!path.length)continue;
+        const endpoint=path[path.length-1];
+        if(Math.hypot(endpoint.x-land.x,endpoint.z-land.z)>105)continue;
+        scout.route=path;scout.way=0;scout.dest={x:endpoint.x,z:endpoint.z};scout.task='explore';
+        return true;
+      }
       return false;
     }
     if(c.focus==='commerce'){
-      if(tryBuilding('market'))return;
+      if(tryBuilding('market',2))return;
       if(buildingOf(seat,'market')){
         for(let target=0;target<8;target++)if(target!==seat&&!pacts.some(p=>(p.a===seat&&p.b===target)||(p.b===seat&&p.a===target))){
           if(trade(seat,target).ok)return;
@@ -350,13 +372,14 @@
       }
       if(chooseColonial())return;
     }else if(c.focus==='science'){
-      if(tryBuilding('library'))return;
+      if(tryBuilding('library',2))return;
       if(c.tech.length>=1&&f.age>=2&&tryBuilding('observatory'))return;
       if(!c.research&&research(seat).ok)return;
       if(chooseColonial())return;
     }else if(c.focus==='culture'){
-      if(tryBuilding('theater'))return;
+      if(tryBuilding('theater',2))return;
       if(c.prestige>=150&&tryBuilding('monument'))return;
+      if(c.sites.length<2&&dispatchExpedition())return;
       if(base.summary().clock-c.festivalLast>=60&&festival(seat).ok)return;
       if(chooseColonial())return;
     }else if(c.focus==='diplomatie'){
