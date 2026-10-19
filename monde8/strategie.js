@@ -251,7 +251,7 @@ function create(world,nav,opts){
  log('Choisis ta capitale, puis clique Fonder mon royaume.',player);
  return {world,nav,player,civs,people:function(){return people},sectors:function(){return sectors},
   buildings:function(){return buildings},events:function(){return events},
-  found,spawn:nextUnit,build:function(t,s){return build(player,t,s)},
+  found,spawn:function(type){return nextUnit(player,type)},build:function(t,s){return build(player,t,s)},
   orderMany,destination,select,update,summary,state,save,load};
 }
 return Object.freeze({VERSION:1,COST,TYPES,create});
