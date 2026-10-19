@@ -8,8 +8,8 @@
 var params=new URLSearchParams(location.search);
 if(params.get('devmap')!=='1'||params.get('mode')==='reseau')return;
 var overlay=document.createElement('div');
-overlay.textContent='MODE DÉVELOPPEMENT · CARTE DÉVOILÉE';
-overlay.style.cssText='position:fixed;top:7px;left:50%;transform:translateX(-50%);z-index:99999;background:#213a2eea;color:#f7e7b8;padding:8px 13px;border:1px solid #b8a06b;border-radius:7px;font:600 12px system-ui;pointer-events:none;text-align:center;box-shadow:0 4px 15px #0007';
+overlay.textContent='DEV · CARTE DÉVOILÉE';
+overlay.style.cssText='position:fixed;right:12px;bottom:12px;z-index:99999;background:#213a2ecc;color:#f7e7b8;padding:4px 7px;border:1px solid #b8a06b88;border-radius:5px;font:600 9px system-ui;letter-spacing:.4px;pointer-events:none;text-align:center;box-shadow:0 2px 8px #0005;opacity:.72';
 document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(overlay)});
 function expose(game){
  if(!game||!Array.isArray(game.fog)||game.__fowDevRevealed)return;
