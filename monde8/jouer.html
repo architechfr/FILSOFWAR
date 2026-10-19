@@ -53,10 +53,37 @@ kbd{display:inline-block;border:1px solid #826a46;padding:1px 5px;border-radius:
 <button id="outpost">⌂ Avant-poste<br><small>125 bois, 45 pierre</small></button>
 <button id="upgrade">⌂ Améliorer l'Hôtel de Ville</button>
 </div><p class="status" id="status"></p></section>
+<section class="panel"><h2>Grandes voies de victoire</h2>
+<p>On peut devenir la civilisation dominante sans faire la guerre : prospérité, science, rayonnement ou diplomatie.</p>
+<label for="focus">Priorité du royaume</label><select id="focus">
+<option value="commerce">💰 Prospérité économique</option><option value="science">📜 Savoir et découvertes</option>
+<option value="culture">🎭 Culture et patrimoine</option><option value="diplomatie">🤝 Alliance des royaumes</option>
+<option value="conquete">⚔ Conquête militaire</option></select>
+<div id="goals" class="list" style="margin:10px 0"></div>
+<div class="stats"><div><b id="knowledge">0</b><small>Connaissances</small></div>
+<div><b id="prestige">0</b><small>Prestige</small></div>
+<div><b id="influence">0</b><small>Influence</small></div>
+<div><b id="tradeVolume">0</b><small>Commerce</small></div></div>
+<div class="actions" style="margin-top:10px">
+<button id="market">🏪 Marché<br><small>75 bois, 25 pierre</small></button>
+<button id="library">📜 Bibliothèque<br><small>95 bois, 35 pierre</small></button>
+<button id="theater">🎭 Salle des fêtes<br><small>105 bois, 40 pierre</small></button>
+<button id="embassy">🤝 Ambassade<br><small>115 bois, 55 pierre, 10 filsous</small></button>
+<button id="observatory">🔭 Observatoire<br><small>Âge II</small></button>
+<button id="monument">🏛 Grand monument<br><small>150 prestige requis</small></button>
+<button id="research">⚙ Lancer une recherche</button>
+<button id="festival">🎉 Organiser un festival</button>
+<button id="trade">📦 Ouvrir une route commerciale</button>
+<button id="envoy">✉ Envoyer des émissaires</button>
+<button id="village">🏡 Fonder un village libre</button>
+</div>
+<label for="partner" style="margin-top:8px">Royaume partenaire</label><select id="partner"></select>
+<div id="victory" class="status" role="status"></div>
+</section>
 <section class="panel"><h2>Les huit royaumes</h2><div id="legend"></div><p id="score" class="muted">Choisis ton royaume.</p></section>
 <section class="panel"><h2>Chronique des conquêtes</h2><div id="events" class="list"></div></section>
 </section></main>
-<script src="monde.js"></script><script src="navigation.js"></script><script src="strategie-v2.js"></script>
+<script src="monde.js"></script><script src="navigation.js"></script><script src="strategie-v2.js"></script><script src="civilisation.js"></script>
 <script>
 (function(){
 'use strict';
@@ -68,7 +95,7 @@ function error(r){say(r.ok?'Ordre accepté.':r.error||'Ordre impossible.');retur
 function setup(){
  var seed=el('seed').value||'2026';
  world=FOW_WORLD8.generate(seed);nav=FOW_NAV8.create(world);
- var chosen=Number(el('seat').value)||0;game=FOW_GAME8.create(world,nav,{playerSeat:chosen});
+ var chosen=Number(el('seat').value)||0;game=FOW_CIV8.enhance(FOW_GAME8.create(world,nav,{playerSeat:chosen}),{ai:true});
  selected=null;started=false;paused=false;speed=1;worldLayer=null;
  el('start').disabled=false;el('seat').disabled=false;el('found').disabled=false;
  var saved=null;try{saved=JSON.parse(localStorage.getItem('fow8-save')||'null')}catch(e){}
@@ -147,6 +174,11 @@ function refresh(){
  var sum=game.summary(),res=sum.resources;
  for(var k of ['food','wood','stone','gold'])el(k).textContent=Math.floor(res[k]);
  el('population').textContent=sum.pop+'/'+sum.popMax+' habitants · '+sum.owned+' secteurs · âge '+sum.age+' · '+Math.floor(sum.clock)+' s';
+ for(var rk of ['knowledge','prestige','influence','tradeVolume'])el(rk).textContent=Math.floor(sum[rk]||0);
+ el('focus').value=sum.focus;
+ el('goals').innerHTML=sum.goals.map(function(g){return '<div><strong>'+g.label+'</strong> · '+g.progress+'% <div style="height:6px;background:#405046;border-radius:8px;overflow:hidden"><div style="width:'+g.progress+'%;height:100%;background:#d4b674"></div></div></div>';}).join('');
+ el('victory').textContent=sum.victory?'🏆 '+game.civs[sum.victory.seat].name+' remporte une victoire de '+sum.victory.name+' !':'Technologies : '+sum.tech.length+' · Sites découverts : '+sum.sites.length;
+
  var u=game.people().find(function(v){return v.id===selected});
  el('inspect').innerHTML=u?('<strong>'+({worker:'Ouvrier',scout:'Éclaireur',soldier:'Soldat'}[u.type])+' · '+u.id+'</strong><p>PV : '+Math.round(u.hp)+'/'+u.maxHp+' · Ordre : '+u.task+'</p>'):'Sélectionne un personnage de ton royaume, puis clique sur la carte pour le déplacer.';
  var scores=game.civs.map(function(f){return {name:f.name,seat:f.seat,owned:game.sectors().filter(function(s){return s.owner===f.seat}).length};});
@@ -154,7 +186,7 @@ function refresh(){
  el('events').innerHTML=game.events().slice(0,12).map(function(e){
   return '<div><span style="color:'+ (civColors[e.seat]||'#afafaa') +'">●</span> '+e.t+'s · '+e.text.replace(/</g,'&lt;')+'</div>';
  }).join('');
- el('production').textContent='Recrutement : '+game.recruitment().filter(function(q){return q.owner===game.player}).map(function(q){return q.type+' '+Math.ceil(q.remaining)+'s';}).join(', ')+' · Chantiers : '+game.buildings().filter(function(b){return b.owner===game.player&&!b.complete;}).map(function(b){return b.type+' '+Math.round(b.progress*100)+'%';}).join(', ');
+ el('production').textContent='Recrutement : '+game.recruitment().filter(function(q){return q.owner===game.player}).map(function(q){return q.type+' '+Math.ceil(q.remaining)+'s';}).join(', ')+' · Chantiers : '+game.buildings().filter(function(b){return b.owner===game.player&&!b.complete;}).map(function(b){return b.type+' '+Math.round(b.progress*100)+'%';}).concat(game.civilization().projects.filter(function(p){return p.owner===game.player&&!p.complete;}).map(function(p){return p.type+' '+Math.round(p.progress*100)+'%';})).join(', ');
  el('overlay').textContent=started?'Royaume '+(game.player+1)+' · '+Math.floor(sum.clock)+' s · Sélectionner puis déplacer':'Monde 2048 × 2048 · Clique Fonder pour démarrer';
  el('found').disabled=!!sum.home;
  el('pause').textContent=paused?'▶ Reprendre':'⏸ Pause';el('speed').textContent='×'+speed+' Vitesse';
@@ -177,7 +209,8 @@ function apply(id,fn){el(id).addEventListener('click',function(){if(!game)return
 function needed(){return game&&game.summary().home;}
 function sel(){return game&&game.people().find(function(u){return u.id===selected&&u.owner===game.player})}
 function homeSector(){return game&&game.summary().home&&game.summary().home.sector;}
-var sampleCapitals=FOW_WORLD8.generate(2026).capitals;for(var i=0;i<8;i++){var option=document.createElement('option');option.value=i;option.textContent=(i+1)+' · '+sampleCapitals[i].name;el('seat').appendChild(option);}
+var sampleCapitals=FOW_WORLD8.generate(2026).capitals;for(var i=0;i<8;i++){var option=document.createElement('option');option.value=i;option.textContent=(i+1)+' · '+sampleCapitals[i].name;el('seat').appendChild(option);
+var opt=document.createElement('option');opt.value=i;opt.textContent=(i+1)+' · '+sampleCapitals[i].name;el('partner').appendChild(opt);}
 el('new').addEventListener('click',function(){if(confirm('Créer une nouvelle carte et abandonner la partie active ?')){localStorage.removeItem('fow8-save');setup();}});
 el('start').addEventListener('click',function(){if(!started){error(game.found());started=!!game.summary().home;el('seat').disabled=started;refresh();render();}});
 el('seat').addEventListener('change',function(){localStorage.removeItem('fow8-save');setup();});
@@ -193,6 +226,19 @@ for(var b of [['buildFarm','farm'],['buildSawmill','sawmill'],['buildBarracks','
  (function(id,type){apply(id,function(){var u=sel(),sector=u?Math.floor(u.z/128)*16+Math.floor(u.x/128):homeSector();return game.build(type,sector);})})(b[0],b[1]);
 }
 apply('upgrade',function(){return game.build('townhall',homeSector())});
+el('focus').addEventListener('change',function(){if(!game)return;error(game.chooseFocus(el('focus').value));refresh()});
+for(var civic of [['market','market'],['library','library'],['theater','theater'],['embassy','embassy'],['observatory','observatory'],['monument','monument']]){
+ (function(id,type){apply(id,function(){var u=sel(),sector=u?Math.floor(u.z/128)*16+Math.floor(u.x/128):homeSector();return game.buildCivic(type,sector);})})(civic[0],civic[1]);
+}
+apply('research',function(){return game.startResearch()});
+apply('festival',function(){return game.holdFestival()});
+apply('trade',function(){return game.openTrade(Number(el('partner').value))});
+apply('envoy',function(){return game.sendEnvoy(Number(el('partner').value))});
+apply('village',function(){
+  var unit=sel();if(!unit)return {ok:false,error:'Sélectionne un ouvrier situé sur la frontière neutre'};
+  var col=Math.floor(unit.x/128),row=Math.floor(unit.z/128);
+  return game.buildCivic('settlement',row*16+col);
+});
 el('pause').addEventListener('click',function(){paused=!paused;refresh()});
 el('speed').addEventListener('click',function(){speed=speed===1?2:speed===2?4:1;refresh()});
 el('save').addEventListener('click',function(){if(!game)return;try{localStorage.setItem('fow8-save',game.save());say('Sauvegarde locale effectuée.')}catch(e){say('Impossible de sauvegarder : '+e.message);}});
