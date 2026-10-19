@@ -28,10 +28,10 @@ function create(spec){
  // The coastline is an artistic interpolation from the v0.8 coastal sites.
  // It is not a replacement for verified GIS shoreline data.
  const coast=[
-  {x:0,z:1814},{x:270,z:1810},{x:410,z:1772},{x:525,z:1744},
-  {x:667,z:1680},{x:784,z:1622},{x:911,z:1578},{x:1050,z:1464},
-  {x:1210,z:1427},{x:1340,z:1475},{x:1520,z:1395},
-  {x:1750,z:1232},{x:1910,z:1170},{x:2048,z:1066}
+  {x:0,z:2040},{x:230,z:2016},{x:410,z:1940},{x:525,z:1884},
+  {x:667,z:1810},{x:784,z:1770},{x:911,z:1739},{x:1050,z:1703},
+  {x:1210,z:1555},{x:1340,z:1432},{x:1520,z:1365},
+  {x:1750,z:1226},{x:1910,z:1150},{x:2048,z:1080}
  ];
  function coastZ(x){
   x=clamp(x,0,2048);
