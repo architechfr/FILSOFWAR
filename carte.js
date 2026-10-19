@@ -435,7 +435,17 @@
       var ru=grosse(rug,x,z);if(ru>.02){var cr=1-Math.abs(2*vn(x,z,38,g+3)-1);h+=ru*cr*cr*cr*7;}
       var dr=riverFn?Math.abs(z-riverFn(x)):99;h*=lisse(10,34,dr);
       // Pas de cuvette au hasard : seuls les lacs et marais descendent sous l'eau.
-      H[iz*HN+ix]=(h<-.6?-.6+(h+.6)*.15:h)+montagneSalagou(x,z);
+      var hh0=(h<-.6?-.6+(h+.6)*.15:h)+montagneSalagou(x,z);
+      // Gorges de l'Herault : vallée encaissée lisible autour du repère géographique.
+      var GP=window.FOW_GEO_PLAYABLE,GG=GP&&GP.byId&&GP.byId.gorges;
+      if(GG){
+        var dg=Math.hypot(x-GG.x,z-GG.z),drg=riverFn?Math.abs(z-riverFn(x)):999;
+        if(dg<115&&drg>7&&drg<62){
+          var kg=(1-dg/115)*lisse(7,28,drg)*(1-lisse(48,64,drg));
+          hh0+=kg*(12+8*(1-Math.abs(2*vn(x,z,23,g+19)-1)));
+        }
+      }
+      H[iz*HN+ix]=hh0;
     }
     // Un replat au coeur de chaque secteur : on y bâtit a plat.
     var S=sectorsVue||[];
@@ -505,7 +515,7 @@
     var v=[echant(R.H,x-k,z-k),echant(R.H,x+k,z-k),echant(R.H,x-k,z+k),echant(R.H,x+k,z+k),echant(R.H,x,z)];
     v.sort(function(a,b){return a-b;});
     // Niveau de terrasse : mediane, puis leger relevage pour garder le soubassement visible.
-    return v[2]+.08;
+    return v[4]+.08;
   }
   function penteBat(x,z,r){
     var R=relief();if(!R)return 0;var k=(r||2)*.95,c=echant(R.H,x,z),mx=0;
