@@ -20,7 +20,7 @@
   var DIRECTIONS = [[0,0],[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
   var origine = carte.peupler;
   var atlasAvant = carte.atlasDecor;
-  var version = String(carte.version) + '-herault2';
+  var version = String(carte.version) + '-herault3';
 
   function distance2(a,b){var x=a.x-b.x,z=a.z-b.z;return x*x+z*z;}
 
@@ -72,7 +72,7 @@
     var G=game.obstacles, F=game.reliefs;
     if(!G || G.length!==384*384 || !Array.isArray(F) || !api.SECTORS)return null;
     var origines=[[195,202],[223,206],[162,201],[231,174],[159,227],[266,207]];
-    var formes=[[0,0,20],[-13,4,12],[13,-7,13],[8,11,10]];
+    var formes=[[0,0,32],[-18,5,19],[19,-9,19],[10,19,15]];
     var encombrants=[game.nodes||[],game.villages||[],game.sites||[],game.herds||[]];
     for(var n=0;n<origines.length;n++){
       var cx=origines[n][0],cz=origines[n][1],centres=[],indices=[],vu=new Uint8Array(G.length),ok=true;
@@ -108,7 +108,7 @@
         continue;
       }
       F.push({t:'lac',c:centres,sec:-1,nom:'Lac du Salagou'});
-      return {x:cx,z:cz,rayon:33};
+      return {x:cx,z:cz,rayon:50};
     }
     return null;
   }
