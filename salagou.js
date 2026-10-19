@@ -152,7 +152,7 @@
         ctx.strokeText(L.sommet.nom,L.sommet.x*w/768,L.sommet.z*h/768-13);
         ctx.fillStyle='#faf0cc';ctx.fillText(L.sommet.nom,L.sommet.x*w/768,L.sommet.z*h/768-13);
       }
-      if(vu(L.barrage.x,L.barrage.z)){
+      if(L.barrage&&vu(L.barrage.x,L.barrage.z)){
         ctx.strokeStyle='#222b33';ctx.lineWidth=2.6;
         ctx.strokeText('Barrage du Salagou',L.barrage.x*w/768,L.barrage.z*h/768+19);
         ctx.fillStyle='#fff2cc';ctx.fillText('Barrage du Salagou',L.barrage.x*w/768,L.barrage.z*h/768+19);
