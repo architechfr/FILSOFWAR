@@ -500,7 +500,19 @@
   }
 
   function h(x,z){var R=relief();return R?echant(R.H,x,z):0;}
-  function hBat(x,z,r){var R=relief();if(!R)return 0;var k=(r||2)*.7;return Math.min(echant(R.H,x-k,z-k),echant(R.H,x+k,z-k),echant(R.H,x-k,z+k),echant(R.H,x+k,z+k),echant(R.H,x,z));}
+  function hBat(x,z,r){
+    var R=relief();if(!R)return 0;var k=(r||2)*.82;
+    var v=[echant(R.H,x-k,z-k),echant(R.H,x+k,z-k),echant(R.H,x-k,z+k),echant(R.H,x+k,z+k),echant(R.H,x,z)];
+    v.sort(function(a,b){return a-b;});
+    // Niveau de terrasse : mediane, puis leger relevage pour garder le soubassement visible.
+    return v[2]+.08;
+  }
+  function penteBat(x,z,r){
+    var R=relief();if(!R)return 0;var k=(r||2)*.95,c=echant(R.H,x,z),mx=0;
+    var pts=[[x-k,z-k],[x+k,z-k],[x-k,z+k],[x+k,z+k],[x-k,z],[x+k,z],[x,z-k],[x,z+k]];
+    for(var i=0;i<pts.length;i++){var d=Math.abs(echant(R.H,pts[i][0],pts[i][1])-c);if(d>mx)mx=d;}
+    return mx;
+  }
   function normale(x,z,out){var R=relief();if(!R){out[0]=0;out[1]=1;out[2]=0;return out;}
     var nx=echant(R.H,x-2,z)-echant(R.H,x+2,z),nz=echant(R.H,x,z-2)-echant(R.H,x,z+2),l=Math.sqrt(nx*nx+16+nz*nz);out[0]=nx/l;out[1]=4/l;out[2]=nz/l;return out;}
   // Ce qui teinte le sol : la roche des falaises, la vase des marais, le sable des rives de lac.
@@ -540,13 +552,15 @@
         if(r()<.45)out.rochers.push({x:x,y:hh-.15,z:z,sx:.7+r()*1.8,sy:.5+r()*1.4,sz:.7+r()*1.6,ry:r()*6.28});
         else if(r()<.16)out.arbres.push({x:x,y:hh-.05,z:z,h:2.4+r()*1.6,pin:true});
       }else if(mm>-.05&&mm<.85&&r()<.8){if(r()<.75)out.roseaux.push({x:x,y:-.11+NIV.marais+.25,z:z,sx:.09+r()*.06,sy:.7+r()*.7,sz:.09+r()*.06,ry:r()*6.28});else out.nenuphars.push({x:x,y:-.11+NIV.marais+.02,z:z,sx:.5+r()*.4,sy:.5+r()*.4,sz:1,rx:-1.5708});}
-      else if(ll>-.4&&ll<-.02&&r()<.06)out.arbres.push({x:x,y:hh-.05,z:z,h:2.6+r()*1.2,saule:true});
+      else if(ll>-.4&&ll<-.02&&r()<.06&&(!riverFn||Math.abs(z-riverFn(x))>10)&&(!window.FOW_GEO_PLAYABLE||!window.FOW_GEO_PLAYABLE.isSea(x,z)))
+        out.arbres.push({x:x,y:hh-.05,z:z,h:2.6+r()*1.2,saule:true});
     }
     // Sur les pentes : des rochers et quelques buissons, pour que l'oeil lise les collines.
     for(var k3=0;k3<140;k3++){var xp=x0+r()*64,zp=z0+r()*64;if(echant(R.L,xp,zp)>-.4||echant(R.M,xp,zp)>-.3||echant(R.F,xp,zp)>-.05)continue;
       var gx3=echant(R.H,xp-2,zp)-echant(R.H,xp+2,zp),gz3=echant(R.H,xp,zp-2)-echant(R.H,xp,zp+2),pe=Math.sqrt(gx3*gx3+gz3*gz3)/4,hp=echant(R.H,xp,zp);
       if(pe>.18&&r()<.5)out.rochers.push({x:xp,y:hp-.1,z:zp,sx:.4+r()*.9,sy:.3+r()*.6,sz:.4+r()*.8,ry:r()*6.28});
-      else if(hp>2.5&&r()<.1)out.buissons.push({x:xp,y:hp+.25,z:zp,sx:.5+r()*.5,sy:.35+r()*.3,sz:.5+r()*.5});}
+      else if(hp>2.5&&r()<.1&&(!riverFn||Math.abs(zp-riverFn(xp))>12)&&(!window.FOW_GEO_PLAYABLE||!window.FOW_GEO_PLAYABLE.isSea(xp,zp)))
+        out.buissons.push({x:xp,y:hp+.25,z:zp,sx:.5+r()*.5,sy:.35+r()*.3,sz:.5+r()*.5});}
     // Les marais, plus touffus : roseaux et nenuphars.
     for(var k2=0;k2<500;k2++){var xm=x0+r()*64,zm=z0+r()*64,mv=echant(R.M,xm,zm);if(mv<-.08||mv>.95)continue;
       if(r()<.8)out.roseaux.push({x:xm,y:-.11+NIV.marais+.45,z:zm,sx:.22+r()*.14,sy:1+r()*.9,sz:.22+r()*.14,ry:r()*6.28});
@@ -685,5 +699,5 @@
   window.FOW_CARTE={version:VERSION,terroirs:TERROIRS,peupler:peupler,sol:sol,herbe:herbe,fleurs:fleurs,
     carteCouleur:carteCouleur,connaitreSecteurs:connaitreSecteurs,graine:graine,dominant:dominant,
     h:h,hBat:hBat,normale:normale,solRelief:solRelief,decor:decor,essence:essence,atlasDecor:atlasDecor,
-    get courant(){return courant;}};
+    penteBat:penteBat,get courant(){return courant;}};
 })();
