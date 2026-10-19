@@ -1,0 +1,195 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14201b"><title>Fils of War — 8 royaumes · Alpha jouable</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;color:#f6eddb;background:#101b18}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#0f1917}header{padding:12px 18px;background:#192622;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #b89e635b;gap:10px;flex-wrap:wrap}
+.brand{font:bold 23px Georgia,serif;color:#e0c17b;letter-spacing:2px}.brand small{font:10px system-ui;display:block;letter-spacing:1px;color:#a7bba7}
+a{color:#e8cc8e}main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;padding:15px;max-width:1500px;margin:auto}
+.world{min-width:0;position:relative;border:1px solid #8d7954;overflow:hidden;border-radius:8px;background:#20362b;padding:6px}
+canvas{display:block;width:100%;aspect-ratio:1;background:#20382c;touch-action:pan-x pan-y;cursor:crosshair}
+.overlay{position:absolute;left:17px;top:18px;padding:8px 12px;background:#142019d9;color:#f6e8c8;font-size:12px;border:1px solid #c8b17a77;pointer-events:none;max-width:70%}
+.sidebar{display:flex;flex-direction:column;gap:10px}
+.panel{padding:14px;background:#1a2923;border:1px solid #8a785059;border-radius:8px}
+h1{font:24px Georgia,serif;margin:0 0 6px}h2{font:18px Georgia,serif;margin:0 0 9px}p{margin:5px 0 9px;color:#bfcabd;font-size:13px}
+button,select,input{min-height:39px;width:100%;border-radius:5px;border:1px solid #958260;background:#13221c;color:#f8e8bf;padding:9px;font:inherit}
+button{cursor:pointer}button:hover{filter:brightness(1.18)}button:disabled{opacity:.36;cursor:not-allowed}
+button.primary{background:#d3b574;color:#172019;font-weight:700}button.on{border-color:#e9ce91;background:#344a38}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.actions button{font-size:12px;min-height:49px}
+.row{display:flex;gap:7px;align-items:center}.row>*{min-width:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.stats div{background:#101d17;border-radius:5px;padding:7px 4px;text-align:center}.stats b{display:block;color:#ebd493;font-size:16px}.stats small{color:#9ba89c;font-size:10px}
+.status{font-size:12px;color:#e0cf9e;min-height:28px}.list{max-height:160px;overflow:auto;font-size:12px}.list div{padding:5px 0;border-bottom:1px solid #ffffff13}
+#legend{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}#legend span{display:flex;align-items:center;font-size:10px;gap:4px}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+#inspect{min-height:70px;font-size:13px}.muted{color:#98a99e;font-size:11px}
+kbd{display:inline-block;border:1px solid #826a46;padding:1px 5px;border-radius:3px;color:#decaa1}
+@media(max-width:950px){main{grid-template-columns:1fr}.sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.sidebar .panel:nth-child(2){grid-column:1/-1}}
+@media(max-width:560px){main{padding:8px;gap:8px}.sidebar{display:flex}header{padding:8px 11px}.brand{font-size:18px}.actions button{font-size:11px}}
+</style></head><body>
+<header><div class="brand">FILS OF WAR<small>8 ROYAUMES · ALPHA JOUABLE SOLO</small></div><div><a href="index.html">Atlas</a> · <a href="../">Jeu 3D original</a></div></header>
+<main><section class="world">
+<canvas id="map" width="1024" height="1024" aria-label="Carte interactive de huit royaumes"></canvas>
+<div class="overlay" id="overlay">Choisis ton royaume, puis fonde ta capitale.</div>
+</section><section class="sidebar">
+<section class="panel"><h1>Le Royaume</h1><p>Un continent de 256 secteurs. Huit royaumes, dont sept adversaires IA. Chasse aux ressources, expansion et premières escarmouches.</p>
+<div class="row"><select id="seat" aria-label="Royaume à contrôler"></select><button class="primary" id="start">Commencer</button></div>
+<div class="row" style="margin-top:7px"><input id="seed" value="2026" aria-label="Graine" placeholder="Graine"><button id="new">Nouvelle partie</button></div>
+<p class="muted">Le jeu 3D principal reste inchangé. Ici, tu testes les règles du futur monde à huit joueurs.</p></section>
+<section class="panel"><h2>Économie & population</h2><div class="stats">
+<div><b id="food">0</b><small>Vivres</small></div><div><b id="wood">0</b><small>Bois</small></div>
+<div><b id="stone">0</b><small>Pierre</small></div><div><b id="gold">0</b><small>Filsous</small></div>
+</div><p id="population">0 habitants · 0 secteurs</p><div class="row"><button id="pause">⏸ Pause</button><button id="speed">×1 Vitesse</button><button id="save">Sauvegarder</button></div></section>
+<section class="panel"><h2>Commandement</h2><p class="muted">Clique un de tes personnages, puis une destination. Pour récolter, sélectionne un ouvrier dans un secteur à toi. Pour conquérir, envoie un éclaireur ou un soldat sur un secteur voisin.</p>
+<div id="inspect">Aucun personnage sélectionné.</div><div class="actions">
+<button id="found" class="primary">⚑ Fonder ma capitale</button>
+<button id="recruitWorker">✦ Recruter ouvrier<br><small>55 vivres</small></button>
+<button id="recruitScout">♞ Recruter éclaireur<br><small>75 vivres, 15 bois</small></button>
+<button id="recruitSoldier">⚔ Recruter soldat<br><small>95 vivres, 35 bois</small></button>
+<button id="gather">♧ Récolter ici</button>
+<button id="buildFarm">🌾 Créer une ferme<br><small>85 bois</small></button>
+<button id="buildSawmill">♧ Scierie<br><small>95 bois, 25 pierre</small></button>
+<button id="buildBarracks">⚔ Caserne<br><small>140 bois, 65 pierre</small></button>
+<button id="outpost">⌂ Avant-poste<br><small>125 bois, 45 pierre</small></button>
+<button id="upgrade">⌂ Améliorer l'Hôtel de Ville</button>
+</div><p class="status" id="status"></p></section>
+<section class="panel"><h2>Les huit royaumes</h2><div id="legend"></div><p id="score" class="muted">Choisis ton royaume.</p></section>
+<section class="panel"><h2>Chronique des conquêtes</h2><div id="events" class="list"></div></section>
+</section></main>
+<script src="monde.js"></script><script src="navigation.js"></script><script src="strategie.js"></script>
+<script>
+(function(){
+'use strict';
+var cv=document.querySelector('#map'),ctx=cv.getContext('2d'),W=1024,world,game,nav,worldLayer,selected=null;
+var paused=false,speed=1,last=0,loopStarted=false,started=false,mouse={x:0,z:0},civColors=['#f6d17d','#9ed1e0','#e5a9b4','#d8adee','#aad481','#f2ae82','#98e3b4','#c8c6ef'];
+var el=function(id){return document.getElementById(id)};
+function say(s){el('status').textContent=s;}
+function error(r){say(r.ok?'Ordre accepté.':r.error||'Ordre impossible.');return r;}
+function setup(){
+ var seed=el('seed').value||'2026';
+ world=FOW_WORLD8.generate(seed);nav=FOW_NAV8.create(world);
+ var chosen=Number(el('seat').value)||0;game=FOW_GAME8.create(world,nav,{playerSeat:chosen});
+ selected=null;started=false;paused=false;speed=1;worldLayer=null;
+ el('start').disabled=false;el('seat').disabled=false;el('found').disabled=false;
+ var saved=null;try{saved=JSON.parse(localStorage.getItem('fow8-save')||'null')}catch(e){}
+ if(saved&&saved.seed===world.seed&&saved.player===chosen){
+  try{game.load(saved);started=!!game.summary().home;say('Partie sauvegardée restaurée.');}catch(e){say('Nouvelle partie.');}
+ }else say('Le monde est prêt. Choisis ta capitale et clique Fonder.');
+ prepareLayer();refresh();
+}
+function prepareLayer(){
+ var small=document.createElement('canvas');small.width=512;small.height=512;
+ var sc=small.getContext('2d'),img=sc.createImageData(512,512);
+ for(var z=0;z<512;z++)for(var x=0;x<512;x++){
+  var wx=x*4+2,wz=z*4+2,v=world.cellAt(wx,wz),col=world.biomeColors[v.biome].color.slice();
+  if(v.kind===1)col=[70,143,166];else if(v.kind===2)col=[64,154,177];
+  else if(v.kind===3)col=[226,193,123];
+  else{var light=Math.max(.68,Math.min(1.25,1+(world.heightAt(wx-7,wz-7)-world.heightAt(wx+7,wz+7))*.026));
+   col=col.map(function(c){return Math.round(Math.min(255,c*light));});}
+  var i=(z*512+x)*4;img.data[i]=col[0];img.data[i+1]=col[1];img.data[i+2]=col[2];img.data[i+3]=255;
+ }
+ sc.putImageData(img,0,0);worldLayer=small;
+}
+function labels(){
+ ctx.lineWidth=1;ctx.strokeStyle='rgba(242,229,182,.10)';
+ for(var i=1;i<16;i++){var k=i*64;ctx.beginPath();ctx.moveTo(k,0);ctx.lineTo(k,W);ctx.moveTo(0,k);ctx.lineTo(W,k);ctx.stroke();}
+ for(var i=0;i<world.landmarks.length;i++){
+  var l=world.landmarks[i],x=l.x/2,z=l.z/2;
+  ctx.font='bold 12px Georgia';ctx.lineWidth=3;ctx.textAlign='center';ctx.strokeStyle='#17261bd8';ctx.fillStyle='#f0dfb8';
+  ctx.strokeText(l.name,x,z+14);ctx.fillText(l.name,x,z+14);
+ }
+}
+function render(){
+ if(!world||!worldLayer)return;
+ ctx.imageSmoothingEnabled=true;ctx.drawImage(worldLayer,0,0,W,W);
+ labels();
+ if(game){
+ var territories=game.sectors();
+ ctx.globalAlpha=.22;
+ territories.forEach(function(t){
+  if(t.owner<0)return;
+  ctx.fillStyle=civColors[t.owner];var s=world.sectors[t.id];
+  ctx.fillRect(s.col*64,s.row*64,64,64);
+ });ctx.globalAlpha=1;
+ for(var k=0;k<world.capitals.length;k++){
+  var c=world.capitals[k],x=c.x/2,z=c.z/2;
+  ctx.beginPath();ctx.fillStyle=civColors[k];ctx.strokeStyle='#14261f';ctx.lineWidth=2.5;
+  ctx.arc(x,z,14,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.font='bold 14px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#17221c';ctx.fillText(String(k+1),x,z);
+ }
+ game.buildings().forEach(function(b){
+  if(b.type==='townhall')return;
+  ctx.fillStyle=civColors[b.owner];ctx.fillRect(b.x/2-3,b.z/2-3,6,6);
+  ctx.strokeStyle='#13231b';ctx.strokeRect(b.x/2-3,b.z/2-3,6,6);
+ });
+ game.people().forEach(function(u){
+  var x=u.x/2,z=u.z/2,sel=u.id===selected;
+  if(sel){ctx.strokeStyle='#fffad2';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,z,sel?9:5,0,Math.PI*2);ctx.stroke();}
+  ctx.fillStyle=civColors[u.owner];ctx.strokeStyle='#101e18';ctx.lineWidth=1.8;
+  ctx.beginPath();ctx.arc(x,z,u.type==='worker'?4:u.type==='scout'?5:6,0,Math.PI*2);ctx.fill();ctx.stroke();
+  if(u.owner===game.player&&u.route&&u.id===selected){
+   ctx.strokeStyle='#fff0bd';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(x,z);
+   u.route.slice(u.way).forEach(function(pt){ctx.lineTo(pt.x/2,pt.z/2)});ctx.stroke();ctx.setLineDash([]);
+  }
+ });
+ }
+}
+function refresh(){
+ if(!game)return;
+ var sum=game.summary(),res=sum.resources;
+ for(var k of ['food','wood','stone','gold'])el(k).textContent=Math.floor(res[k]);
+ el('population').textContent=sum.pop+'/'+sum.popMax+' habitants · '+sum.owned+' secteurs · âge '+sum.age+' · '+Math.floor(sum.clock)+' s';
+ var u=game.people().find(function(v){return v.id===selected});
+ el('inspect').innerHTML=u?('<strong>'+({worker:'Ouvrier',scout:'Éclaireur',soldier:'Soldat'}[u.type])+' · '+u.id+'</strong><p>PV : '+Math.round(u.hp)+'/'+u.maxHp+' · Ordre : '+u.task+'</p>'):'Sélectionne un personnage de ton royaume, puis clique sur la carte pour le déplacer.';
+ var scores=game.civs.map(function(f){return {name:f.name,seat:f.seat,owned:game.sectors().filter(function(s){return s.owner===f.seat}).length};});
+ el('score').textContent=scores.map(function(s){return (s.seat+1)+': '+s.owned}).join(' · ')+' secteurs';
+ el('events').innerHTML=game.events().slice(0,12).map(function(e){
+  return '<div><span style="color:'+ (civColors[e.seat]||'#afafaa') +'">●</span> '+e.t+'s · '+e.text.replace(/</g,'&lt;')+'</div>';
+ }).join('');
+ el('overlay').textContent=started?'Royaume '+(game.player+1)+' · '+Math.floor(sum.clock)+' s · Sélectionner puis déplacer':'Monde 2048 × 2048 · Clique Fonder pour démarrer';
+ el('found').disabled=!!sum.home;
+ el('pause').textContent=paused?'▶ Reprendre':'⏸ Pause';el('speed').textContent='×'+speed+' Vitesse';
+}
+function pick(e){
+ if(!game||!started)return;
+ var r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*2048/r.width,z=(e.clientY-r.top)*2048/r.height;
+ var units=game.people().filter(function(u){return u.owner===game.player&&u.hp>0}),near=null,dist=Infinity;
+ units.forEach(function(u){var d=Math.hypot(u.x-x,u.z-z);if(d<dist){dist=d;near=u;}});
+ if(near&&dist<27){selected=near.id;game.select(selected);say('Unité '+near.id+' sélectionnée. Clique une destination.');}
+ else if(selected){var order=game.destination(selected,x,z,'move');error(order);}
+ else {
+  var sec=game.sectors()[Math.floor(z/128)*16+Math.floor(x/128)];
+  var w=world.cellAt(x,z);
+  say('Secteur '+world.sectors[sec.id].label+' · '+ (sec.owner<0?'Neutre':'Royaume '+(sec.owner+1))+' · Altitude '+w.height.toFixed(1)+' · pente '+w.slope+'°');
+ }
+ refresh();render();
+}
+function apply(id,fn){el(id).addEventListener('click',function(){if(!game)return;error(fn());refresh();render();});}
+function needed(){return game&&game.summary().home;}
+function sel(){return game&&game.people().find(function(u){return u.id===selected&&u.owner===game.player})}
+function homeSector(){return game&&game.summary().home&&game.summary().home.sector;}
+for(var i=0;i<8;i++){var option=document.createElement('option');option.value=i;option.textContent=(i+1)+' · '+FOW_WORLD8.generate(2026).capitals[i].name;el('seat').appendChild(option);}
+el('new').addEventListener('click',function(){if(confirm('Créer une nouvelle carte et abandonner la partie active ?')){localStorage.removeItem('fow8-save');setup();}});
+el('start').addEventListener('click',function(){if(!started){error(game.found());started=!!game.summary().home;el('seat').disabled=started;refresh();render();}});
+el('seat').addEventListener('change',function(){localStorage.removeItem('fow8-save');setup();});
+el('seed').addEventListener('change',function(){localStorage.removeItem('fow8-save');setup();});
+apply('found',function(){var r=game.found();started=!!game.summary().home;return r;});
+apply('recruitWorker',function(){return game.spawn('worker')});
+apply('recruitScout',function(){return game.spawn('scout')});
+apply('recruitSoldier',function(){return game.spawn('soldier')});
+apply('gather',function(){var u=sel();if(!u||u.type!=='worker')return {ok:false,error:'Sélectionne un ouvrier'};var s=game.sectors()[Math.floor(u.z/128)*16+Math.floor(u.x/128)];if(s.owner!==game.player)return {ok:false,error:'Ce terrain ne t’appartient pas'};return game.destination(u.id,u.x,u.z,'gather');});
+for(var b of [['buildFarm','farm'],['buildSawmill','sawmill'],['buildBarracks','barracks'],['outpost','outpost']]){
+ (function(id,type){apply(id,function(){var u=sel(),sector=u?Math.floor(u.z/128)*16+Math.floor(u.x/128):homeSector();return game.build(type,sector);})})(b[0],b[1]);
+}
+apply('upgrade',function(){return game.build('townhall',homeSector())});
+el('pause').addEventListener('click',function(){paused=!paused;refresh()});
+el('speed').addEventListener('click',function(){speed=speed===1?2:speed===2?4:1;refresh()});
+el('save').addEventListener('click',function(){if(!game)return;try{localStorage.setItem('fow8-save',game.save());say('Sauvegarde locale effectuée.')}catch(e){say('Impossible de sauvegarder : '+e.message);}});
+cv.addEventListener('click',pick);
+function tick(t){
+ if(!last)last=t;var dt=Math.min(.10,(t-last)/1000);last=t;
+ if(!paused&&started&&game)game.update(dt*speed);
+ if(game){render();if(t%1000<32)refresh();}
+ requestAnimationFrame(tick);
+}
+setup();requestAnimationFrame(tick);
+})();
+</script></body></html>
