@@ -30,7 +30,7 @@ button{background:#c6a766;color:#1e241c;font-weight:750;cursor:pointer}button:ho
 </section>
 <aside>
  <section class="panel"><h1>Un continent, huit royaumes</h1>
- <p>Terrain <strong>2048 × 2048</strong>, découpé en <strong>256 secteurs</strong> et <strong>1024 parcelles de 64 × 64</strong> pour les futurs chargements progressifs.</p>
+ <p>Grand Salagou enrichi, avec 30 lieux de découverte ou plus. Terrain <strong>2048 × 2048</strong>, découpé en <strong>256 secteurs</strong> et <strong>1024 parcelles de 64 × 64</strong> pour les futurs chargements progressifs.</p>
  <label for="seed">Graine du monde</label>
  <div class="control"><input id="seed" inputmode="numeric" value="2026" aria-label="Graine"><button id="generate">Générer</button></div>
  <p class="muted">Une graine identique génère toujours les mêmes reliefs et les mêmes positions.</p></section>
@@ -57,6 +57,7 @@ button{background:#c6a766;color:#1e241c;font-weight:750;cursor:pointer}button:ho
 </aside>
 </main>
 <script src="monde.js"></script>
+<script src="zone-salagou.js"></script>
 <script>
 (function(){
 'use strict';
@@ -101,6 +102,22 @@ function render(){
    for(var b=0;b<api.BRIDGES.length;b++){var z=api.BRIDGES[b],x=world.riverX?world.riverX(z):world.landmarks[0].x;
     ctx.strokeStyle='#ffe1a4';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x/2-11,z/2);ctx.lineTo(x/2+11,z/2);ctx.stroke();}
   }
+  // Sites de découverte : affichés séparément des étiquettes pour garder l'atlas lisible.
+  if(world.zoneSalagou){
+    var color={belvedere:'#ffe0a0',source:'#7addd6',ruines:'#dbbc92',menhir:'#f0d2a0',
+      grotte:'#a5c5c9',verger:'#bcd47d',mine:'#d0c3a4',foret:'#8dc58b',vignes:'#d3a8c0',
+      marche:'#ffd178',sanctuaire:'#ead1ad',campement:'#ffceaa'};
+    for(var pi=0;pi<world.zoneSalagou.points.length;pi++){
+      var p=world.zoneSalagou.points[pi],px=p.x/2,pz=p.z/2;
+      ctx.beginPath();ctx.fillStyle=color[p.type]||'#fff1c1';ctx.strokeStyle='#24332a';ctx.lineWidth=2.5;
+      ctx.arc(px,pz,4.4,0,Math.PI*2);ctx.fill();ctx.stroke();
+    }
+    var D=world.zoneSalagou.dam;
+    ctx.strokeStyle='#fff2ca';ctx.lineWidth=7;ctx.beginPath();
+    ctx.moveTo(D.x/2-11,D.z/2);ctx.lineTo(D.x/2+11,D.z/2);ctx.stroke();
+    ctx.fillStyle='#fff0ce';ctx.font='bold 13px Georgia';ctx.textAlign='center';
+    ctx.fillText('BARRAGE',D.x/2,D.z/2+22);
+  }
   if(flag[2].checked){ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;
    for(var i=0;i<world.landmarks.length;i++){var l=world.landmarks[i];
     if(l.type==='lac')continue;var x=l.x/2,z=l.z/2;ctx.strokeStyle='#17281d';ctx.fillStyle='#f3e4b7';
@@ -120,6 +137,11 @@ function info(x,z){
  var html='<b>'+ (c?'Royaume '+(c.seat+1)+' · '+c.name:'Secteur '+sec.label)+'</b>';
  html+='<p>Coordonnées : '+Math.round(x)+' / '+Math.round(z)+'<br>Altitude : <b>'+v.height.toFixed(1)+'</b> unités<br>Pente : <b>'+v.slope+'°</b><br>Terrain : '+names[v.kind]+'<br>Biome : '+world.biomeColors[v.biome].label+'</p>';
  html+='<p class="muted">Fantassin : '+(world.canTraverse('infanterie',x,z)?'passage possible':'infranchissable')+'<br>Blindé : '+(world.canTraverse('blindes',x,z)?'passage possible':'infranchissable')+'</p>';
+ var site=world.zoneSalagou&&world.zoneSalagou.points
+    .filter(function(pt){return Math.hypot(pt.x-x,pt.z-z)<58;})
+    .sort(function(a,b){return Math.hypot(a.x-x,a.z-z)-Math.hypot(b.x-x,b.z-z);})[0];
+ if(site)html+='<p><strong>✦ '+site.name+'</strong><br>Type : '+site.type+
+   (site.resource?'<br>Ressource : '+site.resource+' (+'+site.bonus+')':'')+'</p>';
  document.querySelector('#info').innerHTML=html;
 }
 function build(){
