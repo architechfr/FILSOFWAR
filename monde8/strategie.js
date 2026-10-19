@@ -241,7 +241,7 @@ function create(world,nav,opts){
   if(!s||s.version!==1||s.seed!==seed||s.player!==player)throw Error('Sauvegarde incompatible');
   if(!Array.isArray(s.people)||s.people.length>3000||!Array.isArray(s.sectors)||s.sectors.length!==256||
     !Array.isArray(s.civs)||s.civs.length!==8||!Array.isArray(s.buildings))throw Error('Sauvegarde invalide');
-  clock=s.clock;people=copy(s.people);sectors=copy(s.sectors);civs=copy(s.civs);buildings=copy(s.buildings);events=copy(s.events||[]);
+  clock=s.clock;people=copy(s.people);sectors=copy(s.sectors);var loadedCivs=copy(s.civs);for(var i=0;i<8;i++)Object.assign(civs[i],loadedCivs[i]);buildings=copy(s.buildings);events=copy(s.events||[]);
   U=Math.max(0,...people.map(function(u){return Number(u.id.slice(1))||0;}));
   B=Math.max(0,...buildings.map(function(b){return Number(b.id.slice(1))||0;}));
   selected=null;return true;
