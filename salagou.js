@@ -114,7 +114,7 @@
     game.fowSalagou={
       x:center.x,z:center.z,rayon:Math.max(50,Math.ceil(Math.sqrt(surfaceApres*4/Math.PI))),
       surfaceAvant:surfaceAvant,surfaceApres:surfaceApres,lobes:ajoutes,barrage:barrage,
-      sommet:(function(){var G=window.FOW_GEO_PLAYABLE;if(G&&G.nordSud&&G.xy){var q=G.xy(43.8,3.81);return {x:q.x,z:q.z,nom:'Pic Saint-Loup'};}return {x:355,z:83,nom:'Pic Saint-Loup'};})()
+      sommet:(function(){var G=window.FOW_GEO_PLAYABLE;if(G&&G.nordSud&&G.pic){return {x:G.pic.x,z:G.pic.z,nom:'Pic Saint-Loup'};}return {x:355,z:83,nom:'Pic Saint-Loup'};})()
     };
     game.heraultLac.rayon=game.fowSalagou.rayon;
   }

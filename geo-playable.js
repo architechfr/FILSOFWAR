@@ -53,8 +53,16 @@ var RAW=[
 ];
 // La cote : une ligne de plage presque droite au sud, avec de longues ondulations.
 function coastZ(x){return 712+Math.sin(x*.017)*6+Math.sin(x*.0061+1.3)*4;}
-function isSea(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&z>coastZ(x);}
-function isBeach(x,z){var c=coastZ(x);return z>c-16&&z<=c;}
+// Sete (20/10, Florian) : le Mont Saint-Clair, une colline posee dans la mer,
+// reliee a la cote par un lido de sable.
+var SETE={x:518,z:736,r:17,lidoDemi:4};
+function seteD(x,z){var dx=(x-SETE.x)/1.25,dz=z-SETE.z;return Math.sqrt(dx*dx+dz*dz);}
+function surLido(x,z){return Math.abs(x-SETE.x)<SETE.lidoDemi&&z>coastZ(x)-2&&z<SETE.z;}
+function surSete(x,z){return seteD(x,z)<SETE.r||surLido(x,z);}
+function isSea(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&z>coastZ(x)&&!surSete(x,z);}
+function isBeach(x,z){var c=coastZ(x);if(z>c-16&&z<=c)return true;if(surLido(x,z))return true;var d=seteD(x,z);return d>=SETE.r-4&&d<SETE.r;}
+// La hauteur du Mont Saint-Clair (0 hors de la colline).
+function hauteurSete(x,z){var d=seteD(x,z);if(d>=SETE.r-3)return 0;var k=1-d/(SETE.r-3);return 15*k*k*(3-2*k);}
 var SITES=RAW.map(function(r){
   var p=xy(r[3],r[4]),c=coastZ(p.x);
   // Les ports sont au bord de l'eau ; ce qui tomberait en mer revient sur la plage.
@@ -62,6 +70,12 @@ var SITES=RAW.map(function(r){
   return{id:r[0],name:r[1],kind:r[2],major:!!r[5],lat:r[3],lon:r[4],x:p.x,z:p.z};
 });
 var BY={};for(var i=0;i<SITES.length;i++)BY[SITES[i].id]=SITES[i];
+// 20/10 (Florian) : le Salagou n'est pas colle a l'Herault, il est en haut a gauche,
+// entre quatre secteurs pour que son eau ne noie aucun coeur de secteur.
+BY.salagou.x=256;BY.salagou.z=184;
+BY.sete.x=SETE.x;BY.sete.z=SETE.z;
+// Le Pic Saint-Loup : le plus haut sommet de la carte, en haut a droite.
+var PIC=(function(){var q=xy(43.8,3.81);return {x:q.x,z:q.z,h:52,rx:46,rz:36,nom:'Pic Saint-Loup'};})();
 // L'Herault, de la Montagne jusqu'a la mer (lon, lat), du nord au sud.
 var RIVER_RAW=[
  [3.584,43.975],[3.566,43.93],[3.578,43.885],[3.562,43.858],
@@ -133,7 +147,7 @@ var PONTS=['pont-diable','pont-canet'].map(function(id){
   S.x=x;
   return {id:id,name:S.name,x:x,z:z,dx:s/l,dz:1/l};
 });
-var PONT_DEMI=6;
+var PONT_DEMI=3;
 function terrainRiviere(x,z){
   if(isSea(x,z))return 'water';
   if(riverDist(x,z)>=RW)return 'land';
@@ -148,5 +162,5 @@ function nearest(x,z,ids){
 }
 root.FOW_GEO_PLAYABLE=Object.freeze({SIZE:SIZE,bounds:BOUNDS,sites:SITES,byId:BY,river:RIVER,riverZ:riverZ,bridges:BRIDGES,
   nordSud:true,riverX:riverX,riverSlope:riverSlope,riverDist:riverDist,riverHalfWidth:RW,ponts:PONTS,pontDemi:PONT_DEMI,terrainRiviere:terrainRiviere,
-  coastZ:coastZ,seaZmin:700,isSea:isSea,isBeach:isBeach,xy:xy,depuisAncien:depuisAncien,nearest:nearest});
+  pic:PIC,sete:SETE,surSete:surSete,hauteurSete:hauteurSete,coastZ:coastZ,seaZmin:714,isSea:isSea,isBeach:isBeach,xy:xy,depuisAncien:depuisAncien,nearest:nearest});
 })(window);

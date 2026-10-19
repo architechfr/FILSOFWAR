@@ -178,6 +178,8 @@
     }
     function permis(x,z,r){
       if(x<r+10||z<r+10||x>758-r||z>758-r)return false;
+      // Pas d'etang ni de marais colle a la mer : ils se confondraient avec elle.
+      var GPc=window.FOW_GEO_PLAYABLE;if(GPc&&GPc.coastZ&&z+r>GPc.coastZ(x)-60)return false;
       var dzr=dRiv(x,z);if(dzr<r+42)return false;
       for(var i=0;i<SECTORS.length;i++){var s=SECTORS[i],m=r+(s.id===depart.id||s.id===loin.id?38:24);if(d2({x:x,z:z},s)<m*m)return false;}
       for(var j=0;j<feats.length;j++)for(var c=0;c<feats[j].c.length;c++){var C=feats[j].c[c],m2=C[2]+r+12;if(d2({x:x,z:z},{x:C[0],z:C[1]})<m2*m2)return false;}
@@ -411,6 +413,7 @@
       var ds=Math.hypot(x-SL.x,z-SL.z),ks=1-lisse(62,118,ds);
       if(ks>0)base.lerp(tA.setHex(0xa54b36),ks*.86);
     }
+    if(GP&&GP.isBeach&&GP.isBeach(x,z)){var dcs=z-GP.coastZ(x),kb=dcs>-16?lisse(-16,-9,dcs):1;if(GP.surSete&&GP.surSete(x,z))kb=1;base.lerp(tA.setHex(0xd8c48e),kb*.92);}
     return base;
   }
   function herbe(x,z,game){return dominant(game,x,z).herbe;}
@@ -506,8 +509,9 @@
     if(GPm&&GPm.coastZ){
       for(var cz1=0;cz1<HN;cz1++)for(var cx1=0;cx1<HN;cx1++){
         var wxc=cx1*2,wzc=cz1*2,dc=wzc-GPm.coastZ(wxc),ic=cz1*HN+cx1;
+        if(GPm.surSete&&dc>-2&&GPm.surSete(wxc,wzc)){H[ic]=GPm.isBeach(wxc,wzc)?-.18:-.18+GPm.hauteurSete(wxc,wzc);continue;}
         if(dc>0)H[ic]=Math.min(H[ic],-.9-Math.min(1.2,dc*.05));
-        else if(dc>-26){var kc=lisse(-26,0,dc);H[ic]=H[ic]*(1-kc)+(-.62)*kc;}
+        else if(dc>-24){var kc=lisse(-24,0,dc);H[ic]=H[ic]*(1-kc)+(-.24)*kc;}
       }
     }
     return {H:H,L:L,M:M,F:F};
@@ -536,6 +540,7 @@
         [B['saint-pons'].x+8,B['saint-pons'].z+18,15,45,36],
         [B.campawood.x-12,B.campawood.z-8,11,42,34]
       ];
+      if(G.pic)pics.push([G.pic.x,G.pic.z,G.pic.h,G.pic.rx,G.pic.rz],[G.pic.x-30,G.pic.z+14,18,30,24],[G.pic.x+26,G.pic.z+10,14,26,22]);
     }else{
       pics=[[129,120,22,49,37],[287,121,26,44,35],[302,255,20,44,34],[101,280,18,39,47],
             [351,89,42,54,42],[251,291,21,45,31],[71,199,22,39,42],[322,190,18,33,54]];

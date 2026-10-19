@@ -144,7 +144,9 @@
       if(x<9||z<9||x>759||z>759)return false;
       var ix=Math.floor(x/2),iz=Math.floor(z/2);
       if(game.obstacles&&game.obstacles[iz*384+ix])return false;
-      if(Math.abs(z-(384+Math.sin(x*.018)*18))<10)return false;
+      var GPv=window.FOW_GEO_PLAYABLE;
+      if(GPv&&GPv.nordSud){if(GPv.isSea(x,z)||GPv.isBeach(x,z)||GPv.riverDist(x,z)<10)return false;}
+      else if(Math.abs(z-(384+Math.sin(x*.018)*18))<10)return false;
       // Les centres constructibles sont dégagés.
       for(var i=0;i<secteurs.length;i++)if(dist2(x,z,secteurs[i])<(grand?31*31:23*23))return false;
       return true;
