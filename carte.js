@@ -151,7 +151,13 @@
       for(var c=0;c<f.c.length;c++){
         var C=f.c[c],R=C[2]*(gonfle?1:FORMES[f.t].garde)+(gonfle||0),x0=Math.max(0,Math.floor((C[0]-R)/2)),x1=Math.min(OB_N-1,Math.floor((C[0]+R)/2)),
             z0=Math.max(0,Math.floor((C[1]-R)/2)),z1=Math.min(OB_N-1,Math.floor((C[1]+R)/2)),R2=R*R;
-        for(var z=z0;z<=z1;z++)for(var x=x0;x<=x1;x++){var dx=x*2+1-C[0],dz=z*2+1-C[1];if(dx*dx+dz*dz<=R2)G[z*OB_N+x]=code;}
+        for(var z=z0;z<=z1;z++)for(var x=x0;x<=x1;x++){
+          var wx=x*2+1,wz=z*2+1,dx=wx-C[0],dz=wz-C[1];
+          if(dx*dx+dz*dz>R2)continue;
+          // Aucun obstacle procedural ne coupe ou ne bouche la vallée de l'Hérault.
+          if(riverFn&&Math.abs(wz-riverFn(wx))<34)continue;
+          G[z*OB_N+x]=code;
+        }
       }
     }
     function grille(gonfle){var G=new Uint8Array(OB_N*OB_N);for(var i=0;i<feats.length;i++)peindre(G,feats[i],gonfle,gonfle?1:FORMES[feats[i].t].code);return G;}
@@ -173,7 +179,7 @@
     }
     function permis(x,z,r){
       if(x<r+10||z<r+10||x>758-r||z>758-r)return false;
-      var dzr=z-api.riverZ(x);if(dzr<0)dzr=-dzr;if(dzr<r+14)return false;
+      var dzr=z-api.riverZ(x);if(dzr<0)dzr=-dzr;if(dzr<r+42)return false;
       for(var i=0;i<SECTORS.length;i++){var s=SECTORS[i],m=r+(s.id===depart.id||s.id===loin.id?38:24);if(d2({x:x,z:z},s)<m*m)return false;}
       for(var j=0;j<feats.length;j++)for(var c=0;c<feats[j].c.length;c++){var C=feats[j].c[c],m2=C[2]+r+12;if(d2({x:x,z:z},{x:C[0],z:C[1]})<m2*m2)return false;}
       return true;
@@ -481,9 +487,10 @@
     if(riverFn){
       for(var rz0=0;rz0<HN;rz0++)for(var rx0=0;rx0<HN;rx0++){
         var wx0=rx0*2,wz0=rz0*2,dr0=Math.abs(wz0-riverFn(wx0)),ii0=rz0*HN+rx0;
-        if(dr0<7)H[ii0]=Math.min(H[ii0],-.42);
-        else if(dr0<28){
-          var kv=lisse(7,28,dr0),cap=-.42+kv*8.5;
+        if(dr0<8)H[ii0]=Math.min(H[ii0],-.58);
+        else if(dr0<42){
+          // Talus progressif sur 34 m : pas de mur vertical ni de montagne qui traverse l'eau.
+          var kv=lisse(8,42,dr0),cap=-.58+kv*10.5;
           H[ii0]=Math.min(H[ii0],cap);
         }
       }
