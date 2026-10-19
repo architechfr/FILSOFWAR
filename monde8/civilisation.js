@@ -377,6 +377,7 @@
       if(!c.research&&research(seat).ok)return;
       if(chooseColonial())return;
     }else if(c.focus==='culture'){
+      if(tryBuilding('market'))return;
       if(tryBuilding('theater',2))return;
       if(c.sites.length<2&&dispatchExpedition())return;
       if(chooseColonial())return;
