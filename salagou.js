@@ -57,22 +57,30 @@
     for(var n=0;n<G.length;n++)if(masque[n])surfaceAvant++;
     var obstacles=(game.villages||[]).concat(sites,game.herds||[]);
     var sec=api.SECTORS||[];
-    for(var f=0;f<FORMES.length;f++){
-      var P=FORMES[f],x=center.x+P[0],z=center.z+P[1];
-      // Des demi-anses et des presqu'iles : chaque lobe cherche sa taille libre.
-      for(var radius=P[2];radius>=9;radius-=2){
+    // Agrandissement progressif du pourtour du lac existant.
+    // Les lobes se superposent au plan d'eau, mais restent libres de gisements.
+    var noyaux=old.c.slice(), candidats=[];
+    for(var i=0;i<noyaux.length;i++){
+      var C=noyaux[i];
+      for(var t=0;t<16;t++){
+        var ang=t*Math.PI/8,portee=C[2]*(.56+.12*(t%3));
+        candidats.push([C[0]+Math.cos(ang)*portee,C[1]+Math.sin(ang)*portee,13+(t%3)*3]);
+      }
+    }
+    for(var f=0;f<candidats.length;f++){
+      var P=candidats[f],x=P[0],z=P[1];
+      for(var radius=P[2];radius>=7;radius-=2){
         if(x-radius<10||z-radius<12||x+radius>758||z+radius>756)continue;
         var possible=true;
         for(var b=0;b<obstacles.length&&possible;b++){
-          var ent=obstacles[b],free=radius+(ent.radius||3)+7;
+          var ent=obstacles[b],free=radius+(ent.radius||3)+3;
           if(dist2(x,z,ent)<free*free)possible=false;
         }
         for(var k=0;k<sec.length&&possible;k++){
-          var marge=radius+26;if(dist2(x,z,sec[k])<marge*marge)possible=false;
+          var marge=radius+19;if(dist2(x,z,sec[k])<marge*marge)possible=false;
         }
-        // Les ressources sont conservées à leur position. Pas de gisement immergé.
         for(var m=0;m<game.nodes.length&&possible;m++){
-          var item=game.nodes[m],clear=radius+(item.radius||2)+3;
+          var item=game.nodes[m],clear=radius+(item.radius||2)+2;
           if(dist2(x,z,item)<clear*clear)possible=false;
         }
         if(!possible)continue;
@@ -84,8 +92,7 @@
           if(api.terrainAt(px,pz)!=='land'){possible=false;break;}
           changed.push(id);
         }
-        if(!possible||changed.length<13)continue;
-        // Chaque lobe doit toucher le lac existant : pas de points d'eau isoles.
+        if(!possible||changed.length<5)continue;
         var relie=false;
         for(var tt=0;tt<cells.length&&!relie;tt++)if(masque[cells[tt]])relie=true;
         if(!relie)continue;
