@@ -63,6 +63,7 @@ function remplir(){
  try{F.toast('Mode dev : +1000 de chaque ressource.','notice',2500);}catch(e){}
 }
 setInterval(function(){if(instant)finir();},200);
+window.FOW_DEV={finir:finir,remplir:remplir};
 var panneau=document.createElement('div');
 panneau.style.cssText='position:fixed;right:12px;bottom:36px;z-index:99999;display:flex;gap:6px;font:600 10px system-ui';
 function bouton(txt,fn){var b=document.createElement('button');b.type='button';b.textContent=txt;

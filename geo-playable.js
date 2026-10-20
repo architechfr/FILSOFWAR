@@ -150,8 +150,10 @@ var PONTS=['pont-diable','pont-canet'].map(function(id){
 var PONT_DEMI=3;
 function terrainRiviere(x,z){
   if(isSea(x,z))return 'water';
-  if(riverDist(x,z)>=RW)return 'land';
-  for(var i=0;i<PONTS.length;i++){var P=PONTS[i],le=(x-P.x)*P.dx+(z-P.z)*P.dz;if(le>-PONT_DEMI&&le<PONT_DEMI)return 'bridge';}
+  var d=riverDist(x,z);if(d>=RW)return 'land';
+  // Le tablier s'evase en arrivant sur les berges : pas de recoin d'eau ou une unite resterait coincee.
+  var demi=PONT_DEMI+2.6*Math.max(0,Math.min(1,(d-(RW-2.6))/2.6));
+  for(var i=0;i<PONTS.length;i++){var P=PONTS[i];if(Math.abs(x-P.x)>14||Math.abs(z-P.z)>14)continue;var le=(x-P.x)*P.dx+(z-P.z)*P.dz;if(le>-demi&&le<demi)return 'bridge';}
   return 'water';
 }
 var BRIDGES=[];
