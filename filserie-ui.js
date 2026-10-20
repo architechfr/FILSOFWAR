@@ -105,7 +105,7 @@
   function maj(){
     var g=jeu(),hud=document.getElementById('hud'),C=coups();
     if(!boite)return;
-    if(!g||!g.players||!C||!g.coutCoup||(hud&&hud.hidden)){boite.className='fs-cache';if(vise)arreterVisee();return;}
+    if(!g||!g.players||!C||!g.coutCoup||(hud&&hud.hidden)||!document.getElementById('menu')||!document.getElementById('menu').hidden){boite.className='fs-cache';if(vise)arreterVisee();return;}
     var p=g.players[moi()];if(!p){boite.className='fs-cache';return;}
     boite.className='';
     var J=Math.floor(p.filserie||0);

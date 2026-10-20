@@ -27,7 +27,7 @@
     st.textContent='#fow-victoires{position:fixed;top:82px;right:64px;z-index:40;font:600 11px system-ui,sans-serif;color:#efe4c4}'+
       '#fow-victoires>button{background:#17241fe8;border:1px solid #b8a06b88;color:#f2e2b0;border-radius:6px;padding:7px 10px;font:700 11px system-ui;cursor:pointer;letter-spacing:.4px}'+
       '#fow-victoires .fv-corps{margin-top:6px;width:250px;background:#17241ff0;border:1px solid #b8a06b66;border-radius:8px;padding:9px 10px;box-shadow:0 8px 24px #0007}'+
-      '#fow-victoires .fv-cache{display:none}#fow-victoires .fv-l{display:grid;grid-template-columns:20px 1fr;gap:2px 6px;margin:5px 0}'+
+      '#fow-victoires.fv-cache,#fow-victoires .fv-cache{display:none}#fow-victoires .fv-l{display:grid;grid-template-columns:20px 1fr;gap:2px 6px;margin:5px 0}'+
       '#fow-victoires .fv-l small{grid-column:2;color:#b9b19a;font-weight:500}#fow-victoires .fv-barre{grid-column:2;display:block;height:5px;background:#ffffff1a;border-radius:3px;overflow:hidden}'+
       '#fow-victoires .fv-barre b{display:block;height:100%;background:linear-gradient(90deg,#c9a45a,#f1d48b)}#fow-victoires .fv-riv b{background:#d9714f}'+
       '#fow-victoires h4{margin:0 0 4px;font:700 10px system-ui;letter-spacing:1px;color:#cdb47a}';
@@ -44,7 +44,7 @@
   function maj(){
     var F=window.__FOW__,g=F&&F.game,hud=document.getElementById('hud');
     if(!boite)return;
-    if(!g||!g.players||(hud&&hud.hidden)){boite.className='fv-cache';return;}
+    if(!g||!g.players||(hud&&hud.hidden)||!document.getElementById('menu')||!document.getElementById('menu').hidden){boite.className='fv-cache';return;}
     boite.className='';
     if(!ouvert)return;
     var moi=typeof F.me==='number'?F.me:0,lui=1-moi,a=etat(g,moi),b=etat(g,lui);
