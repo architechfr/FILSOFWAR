@@ -59,7 +59,11 @@ var SETE={x:518,z:736,r:17,lidoDemi:4};
 function seteD(x,z){var dx=(x-SETE.x)/1.25,dz=z-SETE.z;return Math.sqrt(dx*dx+dz*dz);}
 function surLido(x,z){return Math.abs(x-SETE.x)<SETE.lidoDemi&&z>coastZ(x)-2&&z<SETE.z;}
 function surSete(x,z){return seteD(x,z)<SETE.r||surLido(x,z);}
-function isSea(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&z>coastZ(x)&&!surSete(x,z);}
+// 20/10 soir (Florian) : les etangs du littoral, minces et longs, derriere un lido de sable.
+var ETANGS=[{n:'Étang de Vendres',x:150,a:26,w:5},{n:'Étang du Bagnas',x:400,a:14,w:4},{n:'Étang de Thau',x:462,a:44,w:7},{n:'Étang de Vic',x:640,a:30,w:5},{n:'Étang de Pierre-Blanche',x:712,a:22,w:4}];
+function etangBord(E,x){var dx=(x-E.x)/E.a;if(dx<=-1||dx>=1)return null;var hw=E.w*Math.sqrt(1-dx*dx),zs=coastZ(x)-5;return {zn:zs-2*hw,zs:zs};}
+function etang(x,z){if(!Number.isFinite(x)||!Number.isFinite(z))return null;for(var i=0;i<ETANGS.length;i++){var b=etangBord(ETANGS[i],x);if(b&&z>b.zn&&z<b.zs)return ETANGS[i];}return null;}
+function isSea(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&(z>coastZ(x)&&!surSete(x,z)||!!etang(x,z));}
 function isBeach(x,z){var c=coastZ(x);if(z>c-16&&z<=c)return true;if(surLido(x,z))return true;var d=seteD(x,z);return d>=SETE.r-4&&d<SETE.r;}
 // La hauteur du Mont Saint-Clair (0 hors de la colline).
 function hauteurSete(x,z){var d=seteD(x,z);if(d>=SETE.r-3)return 0;var k=1-d/(SETE.r-3);return 15*k*k*(3-2*k);}
@@ -164,5 +168,5 @@ function nearest(x,z,ids){
 }
 root.FOW_GEO_PLAYABLE=Object.freeze({SIZE:SIZE,bounds:BOUNDS,sites:SITES,byId:BY,river:RIVER,riverZ:riverZ,bridges:BRIDGES,
   nordSud:true,riverX:riverX,riverSlope:riverSlope,riverDist:riverDist,riverHalfWidth:RW,ponts:PONTS,pontDemi:PONT_DEMI,terrainRiviere:terrainRiviere,
-  pic:PIC,sete:SETE,surSete:surSete,hauteurSete:hauteurSete,coastZ:coastZ,seaZmin:714,isSea:isSea,isBeach:isBeach,xy:xy,depuisAncien:depuisAncien,nearest:nearest});
+  pic:PIC,sete:SETE,surSete:surSete,hauteurSete:hauteurSete,coastZ:coastZ,seaZmin:714,etang:etang,etangs:ETANGS,etangBord:etangBord,isSea:isSea,isBeach:isBeach,xy:xy,depuisAncien:depuisAncien,nearest:nearest});
 })(window);

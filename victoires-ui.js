@@ -24,7 +24,8 @@
   }
   function construire(){
     var st=document.createElement('style');
-    st.textContent='#fow-victoires{position:fixed;top:82px;right:64px;z-index:40;font:600 11px system-ui,sans-serif;color:#efe4c4}'+
+    st.textContent='.fow-top-btn{height:34px;padding:0 11px;border:1px solid #d6bc7640;background:#172323e8;color:#ecdcae;font:700 11px Inter,system-ui,sans-serif;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}.fow-top-btn:hover{border-color:#d6bc76aa}@media(max-width:1120px){.fow-top-btn span{display:none}.fow-top-btn{padding:0 9px;font-size:15px}}'+
+      '#fow-victoires{position:fixed;top:calc(var(--hud-height,72px) + 8px);right:18px;z-index:40;font:600 11px system-ui,sans-serif;color:#efe4c4}'+
       '#fow-victoires>button{background:#17241fe8;border:1px solid #b8a06b88;color:#f2e2b0;border-radius:6px;padding:7px 10px;font:700 11px system-ui;cursor:pointer;letter-spacing:.4px}'+
       '#fow-victoires .fv-corps{margin-top:6px;width:250px;background:#17241ff0;border:1px solid #b8a06b66;border-radius:8px;padding:9px 10px;box-shadow:0 8px 24px #0007}'+
       '#fow-victoires.fv-cache,#fow-victoires .fv-cache{display:none}#fow-victoires .fv-l{display:grid;grid-template-columns:20px 1fr;gap:2px 6px;margin:5px 0}'+
@@ -36,7 +37,7 @@
     var bt=document.createElement('button');bt.type='button';bt.textContent='🏆 Victoires';
     bt.onclick=function(e){e.stopPropagation();ouvert=!ouvert;corps.className=ouvert?'fv-corps':'fv-corps fv-cache';maj();};
     corps=document.createElement('div');corps.className='fv-corps fv-cache';
-    boite.appendChild(bt);boite.appendChild(corps);document.body.appendChild(boite);
+    boite.appendChild(bt);boite.appendChild(corps);document.body.appendChild(boite);var sc=document.querySelector('.session-controls');if(sc){bt.innerHTML='🏆<span> Victoires</span>';bt.classList.add('fow-top-btn');sc.insertBefore(bt,sc.firstChild);}
   }
   function ligne(ic,nom,a,b){
     return '<div class="fv-l"><span>'+ic+'</span><span>'+nom+' · '+a.t+'</span>'+barre(a.r)+'<small>Rival : '+b.t+'</small><span class="fv-riv" style="grid-column:2">'+barre(b.r)+'</span></div>';

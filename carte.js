@@ -423,6 +423,7 @@
         // les ruffes : une roche litee, des bandes rouge sombre et ocre qui suivent le relief
         var bd=Math.sin(h(x,z)*2.1+vn(x,z,22,7704)*3.2);base.lerp(tA.setHex(bd>0?0xc06a42:0x6e2f22),Math.abs(bd)*.32*ks);}
     }
+    if(GP&&GP.etang&&z<GP.coastZ(x)&&GP.etang(x,z)){base.lerp(tA.setHex(0x3f7a80),.85);return base;}
     if(GP&&GP.isSea&&GP.isSea(x,z)){var dsea=z-GP.coastZ(x);base.lerp(tA.setHex(0xcdbb88),.85).lerp(tB.setHex(0x2c4f55),Math.max(0,Math.min(.85,(dsea-2)/26)));return base;}
     if(GP&&GP.isBeach&&GP.isBeach(x,z)){var dcs=z-GP.coastZ(x),kb=dcs>-16?lisse(-16,-9,dcs):1;if(dcs>-2.5){base.lerp(tA.setHex(0xe8e2cc),.55);return base;}if(GP.surSete&&GP.surSete(x,z))kb=1;base.lerp(tA.setHex(0xd8c48e),kb*.92);}
     return base;
@@ -521,6 +522,7 @@
       for(var cz1=0;cz1<HN;cz1++)for(var cx1=0;cx1<HN;cx1++){
         var wxc=cx1*2,wzc=cz1*2,dc=wzc-GPm.coastZ(wxc),ic=cz1*HN+cx1;
         if(GPm.surSete&&dc>-2&&GPm.surSete(wxc,wzc)){H[ic]=GPm.isBeach(wxc,wzc)?-.18:-.18+GPm.hauteurSete(wxc,wzc);continue;}
+        if(GPm.etang&&dc<0&&GPm.etang(wxc,wzc)){H[ic]=Math.min(H[ic],-.8);continue;}
         if(dc>0)H[ic]=Math.min(H[ic],-.9-Math.min(1.2,dc*.05));
         else if(dc>-24){var kc=lisse(-24,0,dc);H[ic]=H[ic]*(1-kc)+(-.24)*kc;}
       }

@@ -21,10 +21,14 @@
 (function(){
   var P=new URLSearchParams(location.search);
   // Le diagnostic visuel revele toute la carte : ne pas melanger ces parties avec les sauvegardes normales.
-  if(P.get('mode')==='reseau'||P.get('devmap')==='1')return;
+  function boutonSauver(f){document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('fow-sauver');if(b)b.onclick=f;});var b=document.getElementById('fow-sauver');if(b)b.onclick=f;}
+  if(P.get('mode')==='reseau'||P.get('devmap')==='1'){
+    boutonSauver(function(){var t=P.get('devmap')==='1'?'Le mode développement ne sauvegarde pas (tout y est instantané) : ouvre le lien normal pour garder ta partie.':'Une partie en réseau ne se sauvegarde pas.';try{window.__FOW__.toast(t,'error',6000);}catch(e){}var i=document.getElementById('fow-sauver-info');if(i)i.textContent=t;});
+    return;
+  }
   var CLE='fow.sauvegarde',TICK=0.05;
   var METHODES=['order','train','placeBuilding','foundSettlement','upgradeSettlement','advanceAge','research','trade','rallyVillage','hater','fowLabo','fowCoup','fowDiplo'];
-  var NIVEAUX=['Nomade','Campement','Maison principale','Hôtel de ville'];
+  var NIVEAUX=['Nomade','Campement','Maison principale','Hôtel de ville'],AGES=['','I','II','III','IV','V'];
   var suivi=null;       // la partie en cours d'enregistrement
   var reprise=null;     // la sauvegarde qu'on est en train de rejouer
   var fowCourant=null;
@@ -210,7 +214,7 @@
     b.className='primary start-button'+(ok&&!reprise?'':' fow-cache');
     if(ok){
       var r=sv.resume||{};
-      b.querySelector('.fr-detail').textContent=(NIVEAUX[r.niveau]||'Nomade')+(r.age>1?' · Âge '+(r.age===2?'II':'III'):'')+' · '+(r.pop|0)+' habitants · '+duree(r.temps|0)+' de jeu';
+      b.querySelector('.fr-detail').textContent=(NIVEAUX[r.niveau]||'Nomade')+(r.age>1?' · Âge '+(AGES[r.age]||r.age):'')+' · '+(r.pop|0)+' habitants · '+duree(r.temps|0)+' de jeu';
     }
   }
   var vieilleDite=false;
@@ -229,5 +233,6 @@
     try{f.startGame();}catch(e){reprise=null;voile(null);majBouton();}
   }
   setInterval(function(){if(!reprise)majBouton();},2000);
+  boutonSauver(function(){var s=suivi;if(!s){try{window.__FOW__.toast('Rien à sauvegarder : donne d’abord un ordre à ton clan.','notice');}catch(e){}return;}s.garde=true;s.sale=true;sauver();var ok=!s.sale,t=ok?'💾 Partie sauvegardée sur cet appareil. « Reprendre ma partie » t’attend à l’accueil.':'La sauvegarde a échoué (mémoire du navigateur pleine ou bloquée).';try{window.__FOW__.toast(t,ok?'notice':'error',5000);}catch(e){}var i=document.getElementById('fow-sauver-info');if(i)i.textContent=ok?'Sauvegardée à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'.':t;});
   window.FOW_SAUVEGARDE={lire:lire,sauver:sauver,effacer:effacer,empreinte:empreinte,get suivi(){return suivi;},get reprise(){return reprise;},get derniere(){return derniere;}};
 })();

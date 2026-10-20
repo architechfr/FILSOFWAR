@@ -14,7 +14,7 @@
   function humeur(r){return r>=60?['😄','Copains de comptoir']:r>=30?['🙂','Cordiaux']:r>=0?['😐','Méfiants']:r>=-40?['😠','Rancuniers']:['🤬','Furieux'];}
   function construire(){
     var st=document.createElement('style');
-    st.textContent='#fow-diplo{position:fixed;top:82px;right:180px;z-index:40;font:600 11px system-ui,sans-serif;color:#efe4c4}'+
+    st.textContent='#fow-diplo{position:fixed;top:calc(var(--hud-height,72px) + 8px);right:18px;z-index:40;font:600 11px system-ui,sans-serif;color:#efe4c4}'+
       '#fow-diplo.dp-cache,#fow-diplo .dp-cache{display:none}'+
       '#fow-diplo>button{background:#17241fe8;border:1px solid #b8a06b88;color:#f2e2b0;border-radius:6px;padding:7px 10px;font:700 11px system-ui;cursor:pointer;letter-spacing:.4px}'+
       '#fow-diplo>button.dp-alerte{border-color:#f2cf7b;box-shadow:0 0 12px #f2b84b88;animation:dpP 1s ease-in-out infinite alternate}@keyframes dpP{to{box-shadow:0 0 2px #f2b84b33}}'+
@@ -38,7 +38,7 @@
     bouton.onclick=function(e){e.stopPropagation();ouvert=!ouvert;corps.className=ouvert?'dp-corps':'dp-corps dp-cache';maj();};
     corps=document.createElement('div');corps.className='dp-corps dp-cache';
     corps.addEventListener('click',function(e){var b=e.target.closest('button[data-a]');if(b){e.stopPropagation();agir(b.getAttribute('data-a'));}});
-    boite.appendChild(bouton);boite.appendChild(corps);document.body.appendChild(boite);
+    boite.appendChild(bouton);boite.appendChild(corps);document.body.appendChild(boite);var sc=document.querySelector('.session-controls');if(sc){bouton.innerHTML='🤝<span> Diplomatie</span>';bouton.classList.add('fow-top-btn');sc.insertBefore(bouton,sc.firstChild);}
   }
   function maj(){
     var f=F(),g=f&&f.game,hud=document.getElementById('hud'),menu=document.getElementById('menu');
@@ -46,7 +46,7 @@
     if(!g||!g.players||!g.fowDiplo||(hud&&hud.hidden)||(menu&&!menu.hidden)){boite.className='dp-cache';return;}
     boite.className='';
     var D=g._fowD?g._fowD():g.fowDiplo,o=moi(),p=g.players[o],offre=D.offre&&D.offre.pour===o?D.offre:null;
-    bouton.className=offre?'dp-alerte':'';
+    bouton.className='fow-top-btn'+(offre?' dp-alerte':'');
     if(!ouvert)return;
     var E={guerre:['⚔️ En guerre','Les Barons peuvent attaquer à tout moment.'],treve:['🕊️ Trêve','Encore '+fmt(D.fin-g.time)+' sans combat.'],pacte:['🤝 Pacte commercial','Vos marchands commercent entre vos villes. Personne n’attaque.'],paix:['🌿 Paix','Mode exploration : la paix tient tant que tu n’attaques pas.']}[D.etat]||['?',''];
     var H=humeur(D.relation),pos=Math.max(0,Math.min(100,(D.relation+100)/2));
