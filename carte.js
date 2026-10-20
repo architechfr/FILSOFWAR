@@ -83,7 +83,7 @@
   function contreesHerault(SECTORS,depart,rnd){
     var loin=SECTORS.slice().sort(function(a,b){return d2(b,depart)-d2(a,depart)||a.id-b.id;})[0];
     var G=window.FOW_GEO_PLAYABLE,B=G&&G.byId;
-    // Les foyers viennent des memes localisations que le continent 3D.
+    // Les foyers viennent des memes localisations que la carte d.origine.
     // On garde seulement un petit jitter visuel : la geographie ne change plus de partie en partie.
     var rep=G&&B?[
       {x:B.salagou.x,z:B.salagou.z,t:'ruffes'},
@@ -697,7 +697,7 @@
       if(e==='pin'){ctx.moveTo(x,z-4.2);ctx.lineTo(x+2.6,z+1.6);ctx.lineTo(x-2.6,z+1.6);}else ctx.arc(x,z-1,2.5,0,6.283);
       ctx.fill();ctx.fillStyle='#4a3826';ctx.fillRect(x-.5,z+1.4,1,1.8);
     }
-    // Les 31 reperes : memes localisations que le continent 3D.
+    // Les 31 reperes : memes localisations que la carte d.origine.
     var GP=window.FOW_GEO_PLAYABLE;
     if(GP&&GP.sites){
       var labelsGeo=[];
