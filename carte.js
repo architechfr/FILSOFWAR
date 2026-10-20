@@ -419,10 +419,12 @@
     var GP=window.FOW_GEO_PLAYABLE,SL=GP&&GP.byId&&GP.byId.salagou;
     if(SL){
       var ds=Math.hypot(x-SL.x,z-SL.z),ks=1-lisse(62,118,ds);
-      if(ks>0)base.lerp(tA.setHex(0xa54b36),ks*.86);
+      if(ks>0){base.lerp(tA.setHex(0xa54b36),ks*.86);
+        // les ruffes : une roche litee, des bandes rouge sombre et ocre qui suivent le relief
+        var bd=Math.sin(h(x,z)*2.1+vn(x,z,22,7704)*3.2);base.lerp(tA.setHex(bd>0?0xc06a42:0x6e2f22),Math.abs(bd)*.32*ks);}
     }
     if(GP&&GP.isSea&&GP.isSea(x,z)){var dsea=z-GP.coastZ(x);base.lerp(tA.setHex(0xcdbb88),.85).lerp(tB.setHex(0x2c4f55),Math.max(0,Math.min(.85,(dsea-2)/26)));return base;}
-    if(GP&&GP.isBeach&&GP.isBeach(x,z)){var dcs=z-GP.coastZ(x),kb=dcs>-16?lisse(-16,-9,dcs):1;if(GP.surSete&&GP.surSete(x,z))kb=1;base.lerp(tA.setHex(0xd8c48e),kb*.92);}
+    if(GP&&GP.isBeach&&GP.isBeach(x,z)){var dcs=z-GP.coastZ(x),kb=dcs>-16?lisse(-16,-9,dcs):1;if(dcs>-2.5){base.lerp(tA.setHex(0xe8e2cc),.55);return base;}if(GP.surSete&&GP.surSete(x,z))kb=1;base.lerp(tA.setHex(0xd8c48e),kb*.92);}
     return base;
   }
   function herbe(x,z,game){return dominant(game,x,z).herbe;}
