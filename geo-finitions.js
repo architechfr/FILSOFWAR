@@ -14,6 +14,7 @@
 
   carte.peupler=function(game,api){
     originalPeupler.call(this,game,api);
+    window.__fowSecteursMoteur=api.SECTORS||[];
     // Les gisements poses par les couches precedentes sur la plage ou dans l'eau sont retires.
     var garde=[],retires=0;
     for(var i=0;i<game.nodes.length;i++){
@@ -66,6 +67,39 @@
     return poses;
   }
 
+  // 20/10 : le bocage. Les grandes prairies et les vallees recoivent des haies, des bosquets
+  // et des chaos de rochers : on ne marche plus sur une pelouse uniforme. Decor seul, sans collision.
+  function h32(a,b,c){var h=Math.imul(a|0,374761393)^Math.imul(b|0,668265263)^Math.imul(c|0,1274126177);h=Math.imul(h^(h>>>13),1103515245);return ((h^(h>>>16))>>>0)/4294967296;}
+  function bocage(out,col,row){
+    var g=carte.courant;if(!g||!g.terroirs)return;
+    var x0=col*64,z0=row*64,cx=x0+32,cz=z0+32;
+    var seed=(g.seed|0)^0x5eed,k=0;function r(){return h32(col*7+k++,row*13,seed);}
+    function libre(x,z,marge){
+      if(x<6||z<6||x>762||z>762)return false;
+      if(G.isSea(x,z)||G.isBeach(x,z)||G.riverDist(x,z)<9)return false;
+      var ix=Math.floor(x/2),iz=Math.floor(z/2);if(g.obstacles&&g.obstacles[iz*384+ix])return false;
+      var sec=window.__fowSecteursMoteur||[];for(var i=0;i<sec.length;i++){var dx=x-sec[i].x,dz=z-sec[i].z;if(dx*dx+dz*dz<(marge||30)*(marge||30))return false;}
+      for(var j=0;j<g.nodes.length;j++){var n=g.nodes[j],ex=x-n.x,ez=z-n.z,m=(n.radius||1)+2;if(ex*ex+ez*ez<m*m)return false;}
+      return true;
+    }
+    var herbe=carte.herbe?carte.herbe(cx,cz,g):.6;if(herbe<.5)return; // causses et ruffes : leur propre decor
+    // une ou deux haies, faites de buissons serres le long d'une ligne
+    var nh=r()<.75?(r()<.4?2:1):0;
+    for(var hh=0;hh<nh;hh++){
+      var ax=x0+6+r()*52,az=z0+6+r()*52,ang=r()*Math.PI,L=16+r()*22,ux=Math.cos(ang),uz=Math.sin(ang);
+      for(var d=-L/2;d<=L/2;d+=1.15){
+        var x=ax+ux*d+(r()-.5)*.5,z=az+uz*d+(r()-.5)*.5;if(!libre(x,z))continue;
+        var y=carte.h(x,z);out.buissons.push({x:x,y:y+.32,z:z,sx:.55+r()*.35,sy:.42+r()*.3,sz:.55+r()*.35});
+      }
+    }
+    // un chaos de rochers ou un bosquet de buissons ronds
+    if(r()<.45){
+      var bx=x0+8+r()*48,bz=z0+8+r()*48,nb=4+Math.floor(r()*4);
+      for(var q=0;q<nb;q++){var x2=bx+(r()-.5)*7,z2=bz+(r()-.5)*7;if(!libre(x2,z2,26))continue;var y2=carte.h(x2,z2);
+        if(r()<.5)out.rochers.push({x:x2,y:y2-.05,z:z2,sx:.5+r()*1.1,sy:.35+r()*.7,sz:.5+r()*1.1,ry:r()*6.28});
+        else out.buissons.push({x:x2,y:y2+.4,z:z2,sx:.8+r()*.5,sy:.6+r()*.4,sz:.8+r()*.5});}
+    }
+  }
   carte.decor=function(col,row){
     var out=originalDecor.call(this,col,row);
     function filtre(liste,sableOk){
@@ -79,6 +113,7 @@
     out.roseaux=filtre(out.roseaux,false);
     out.nenuphars=filtre(out.nenuphars,false);
     out.rochers=filtre(out.rochers,true);
+    bocage(out,col,row);
     return out;
   };
   carte.geoFinitions=true;

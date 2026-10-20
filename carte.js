@@ -129,6 +129,8 @@
       }
       // La bande proche du fleuve gagne toujours sur les foyers voisins.
       if(G&&dRiv(sec.x,sec.z)<78&&type!=='causses')type='rives';
+      // 20/10 : le rouge reste autour du Salagou ; plus loin, les ruffes redeviennent causses.
+      if(type==='ruffes'&&B&&B.salagou&&Math.hypot(sec.x-B.salagou.x,sec.z-B.salagou.z)>125)type='causses';
       result[sec.id]=type;
     }
     return result;

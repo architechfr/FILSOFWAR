@@ -245,11 +245,17 @@
       ctx.textAlign='center';ctx.textBaseline='bottom';
       ctx.font='italic 500 '+Math.max(8,Math.min(11,Math.round(w/64)))+'px Georgia, serif';
       ctx.lineWidth=2.6;ctx.strokeStyle='rgba(16,24,23,.85)';ctx.fillStyle='#f2deb0';
+      var place=[];
       for(var i=0;i<game.heraultLieux.length;i++){
         var p=game.heraultLieux[i],cx=Math.floor(p.x/2),cz=Math.floor(p.z/2);
         if(fog && !(fog[cz*384+cx]>0))continue;
         var xx=p.x*w/768,zz=p.z*h/768-9;
         if(xx<45||xx>w-45||zz<16||zz>h-10)continue;
+        // pas de nom qui en chevauche un autre ni le grand titre du lac
+        var tw=ctx.measureText(p.nom).width/2+4,pris=false;place=place||[];
+        var L=game.fowSalagou;if(L&&Math.abs(xx-L.x*w/768)<w*.16&&Math.abs(zz-L.z*h/768)<h*.035)pris=true;
+        for(var q=0;q<place.length&&!pris;q++)if(Math.abs(place[q][0]-xx)<place[q][2]+tw&&Math.abs(place[q][1]-zz)<14)pris=true;
+        if(pris)continue;place.push([xx,zz,tw]);
         // 20/10 : le nom du lieu, pas celui d'une region qui n'est pas la (« Campawood » pres du Pic...).
         ctx.strokeText(p.nom,xx,zz);ctx.fillText(p.nom,xx,zz);
       }
