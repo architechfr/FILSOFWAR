@@ -697,7 +697,7 @@
         ctx.fillStyle=gp.kind==='pont'?'#e9c77b':gp.kind==='lac'?'#5a9ab0':gp.kind==='port'?'#7ab4c4':'#eee1bd';
         ctx.strokeStyle='rgba(47,38,28,.8)';ctx.lineWidth=1.2;
         ctx.arc(gx0,gz0,gp.major?2.4:1.5,0,6.283);ctx.fill();ctx.stroke();
-        if(!gp.major)continue;
+        if(!gp.major||gp.id==='salagou')continue;
         var nomg=gp.name,fs=Math.max(8,Math.round(w/68));ctx.font='600 '+fs+'px Georgia, serif';
         var tw=ctx.measureText(nomg).width/2+3,lx0=Math.max(tw+2,Math.min(w-tw-2,gx0)),lz0=Math.max(fs+3,Math.min(hh-4,gz0-6));
         var clash=false;
@@ -719,7 +719,8 @@
         for(var a=0;a<10;a++){var an=a*.628,rx=C[0]+Math.cos(an)*C[2]*.95,rz=C[1]+Math.sin(an)*C[2]*.95;ctx.beginPath();ctx.moveTo(rx*SX,rz*SZ);ctx.lineTo((rx+Math.cos(an)*3)*SX,(rz+Math.sin(an)*3)*SZ);ctx.stroke();}}
     }
     // Les noms des contrees, sur chaque groupe de secteurs du meme terroir deja explore.
-    var S=sectorsVue||[],T=game.terroirs||[],vu={},etiq=[];
+    // 20/10 : sur la carte nord-sud, les vrais noms de lieux suffisent (plus de « Causses » ou « Hérault » en double).
+    var S=(window.FOW_GEO_PLAYABLE&&window.FOW_GEO_PLAYABLE.nordSud)?[]:(sectorsVue||[]),T=game.terroirs||[],vu={},etiq=[];
     ctx.textAlign='center';ctx.font='italic 600 '+Math.round(w/52)+'px Georgia, serif';
     for(var s=0;s<S.length;s++){
       var t=T[S[s].id];if(!t||vu[s])continue;

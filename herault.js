@@ -243,14 +243,15 @@
     ctx.save();
     try {
       ctx.textAlign='center';ctx.textBaseline='bottom';
-      ctx.font='italic 600 '+Math.max(9,Math.min(14,Math.round(w/48)))+'px Georgia, serif';
-      ctx.lineWidth=3;ctx.strokeStyle='rgba(16,24,23,.85)';ctx.fillStyle='#f2deb0';
+      ctx.font='italic 500 '+Math.max(8,Math.min(11,Math.round(w/64)))+'px Georgia, serif';
+      ctx.lineWidth=2.6;ctx.strokeStyle='rgba(16,24,23,.85)';ctx.fillStyle='#f2deb0';
       for(var i=0;i<game.heraultLieux.length;i++){
         var p=game.heraultLieux[i],cx=Math.floor(p.x/2),cz=Math.floor(p.z/2);
         if(fog && !(fog[cz*384+cx]>0))continue;
         var xx=p.x*w/768,zz=p.z*h/768-9;
         if(xx<45||xx>w-45||zz<16||zz>h-10)continue;
-        ctx.strokeText(p.region,xx,zz);ctx.fillText(p.region,xx,zz);
+        // 20/10 : le nom du lieu, pas celui d'une region qui n'est pas la (« Campawood » pres du Pic...).
+        ctx.strokeText(p.nom,xx,zz);ctx.fillText(p.nom,xx,zz);
       }
     } finally {ctx.restore();}
   };
