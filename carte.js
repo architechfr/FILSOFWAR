@@ -410,11 +410,18 @@
       r+=w*tA.r;g+=w*tA.g;b+=w*tA.b;
     }
     base.r=r;base.g=g;base.b=b;
+    // 20/10 (decor) : des patchs de prairie seche et de prairie grasse, comme vus d'avion,
+    // et des dalles calcaires piquees de garrigue sur les causses.
+    var mac=vn(x,z,96,7701)*.62+vn(x,z,33,7702)*.38,pc=p.causses||0,ph=1-pc-(p.ruffes||0);
+    if(ph>.2){var kd=Math.max(0,Math.min(1,(mac-.5)*2.6));if(kd>0)base.lerp(tA.setHex(0xa8a062),kd*.42*ph);else base.lerp(tA.setHex(0x557f3c),Math.min(1,(.5-mac)*2.2)*.38*ph);}
+    if(pc>.2){var kc=vn(x,z,14,7703);base.lerp(tA.setHex(kc>.6?0xc2bdab:0x6f7a4c),(kc>.6?(kc-.6)*1.6:Math.max(0,.4-kc)*1.4)*pc);}
+    base.lerp(tA.setRGB(base.r*.3+base.g*.59+base.b*.11,base.r*.3+base.g*.59+base.b*.11,base.r*.3+base.g*.59+base.b*.11),.1);
     var GP=window.FOW_GEO_PLAYABLE,SL=GP&&GP.byId&&GP.byId.salagou;
     if(SL){
       var ds=Math.hypot(x-SL.x,z-SL.z),ks=1-lisse(62,118,ds);
       if(ks>0)base.lerp(tA.setHex(0xa54b36),ks*.86);
     }
+    if(GP&&GP.isSea&&GP.isSea(x,z)){var dsea=z-GP.coastZ(x);base.lerp(tA.setHex(0xcdbb88),.85).lerp(tB.setHex(0x2c4f55),Math.max(0,Math.min(.85,(dsea-2)/26)));return base;}
     if(GP&&GP.isBeach&&GP.isBeach(x,z)){var dcs=z-GP.coastZ(x),kb=dcs>-16?lisse(-16,-9,dcs):1;if(GP.surSete&&GP.surSete(x,z))kb=1;base.lerp(tA.setHex(0xd8c48e),kb*.92);}
     return base;
   }

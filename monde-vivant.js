@@ -138,7 +138,7 @@
     if(!game||!game.terroirs||!secteurs)return out;
     var s=voisin(col*64+32,row*64+32,secteurs),b=game.terroirs[s.id]||'prairie';
     var dens={vallee:[2,27,7],foret:[5,60,5],prairie:[2,38,5],
-              causses:[1,21,23],ruffes:[1,26,20],rives:[3,54,7]}[b]||[2,32,8];
+              causses:[1,18,8],ruffes:[1,20,7],rives:[3,54,7]}[b]||[2,32,8];
     var r=hasard(hash(col,row,game.seed^0x2f18d3e7)), x0=col*64,z0=row*64;
     function admissible(x,z,grand){
       if(x<9||z<9||x>759||z>759)return false;
@@ -169,7 +169,7 @@
       if(j>=dens[2])break;
       var p2=point();if(!admissible(p2.x,p2.z,false))continue;
       var y=carte.h(p2.x,p2.z);
-      out.rochers.push({x:p2.x,y:y-.09,z:p2.z,sx:.37+r()*1.3,sy:.22+r()*.75,sz:.35+r()*1.4,ry:r()*6.28});
+      var gros=b==='causses'||b==='ruffes'?1.6:1;out.rochers.push({x:p2.x,y:y-.09,z:p2.z,sx:(.37+r()*1.3)*gros,sy:(.22+r()*.75)*gros,sz:(.35+r()*1.4)*gros,ry:r()*6.28});
     }
     var arbres=0;
     for(var k=0;k<dens[0]*3&&arbres<dens[0];k++){
