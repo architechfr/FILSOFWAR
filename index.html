@@ -151,26 +151,44 @@
 
 </style>
 <style id="fow-ui-allege">/* 20/10 : interface allegee, plus de place pour la carte */@media(min-width:901px){:root{--tray-height:150px}.selection-panel{padding:10px 16px 26px;gap:18px}.action-card{min-height:76px;padding:7px 4px 6px}.action-card.small-card{min-height:58px}.portrait{width:56px;height:62px}.selection-info{width:220px}.objective-panel{width:240px;padding:12px 14px 10px;opacity:.94}.objective-panel h2{font-size:16px;margin:8px 0 6px}.objective-panel p{font-size:10px;line-height:1.5}}</style>
+<style id="fow-menu-v4">
+.menu-screen{background:linear-gradient(90deg,rgba(9,14,14,.9),rgba(10,16,16,.62) 34%,rgba(10,16,16,.12) 62%,rgba(10,16,16,0) 100%),radial-gradient(ellipse at 80% 110%,rgba(8,10,10,.55),transparent 55%)}
+.menu-content{background:linear-gradient(160deg,rgba(26,34,30,.78),rgba(14,20,19,.66));border:1px solid rgba(214,188,120,.28);border-radius:14px;padding:26px 28px 22px!important;margin-top:8px;margin-bottom:8px;box-shadow:0 24px 70px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,236,190,.08);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);flex:0 1 auto!important;align-self:flex-start;max-height:calc(100% - 20px);overflow:auto}
+.menu-screen>.menu-content{margin-top:auto;margin-bottom:auto}
+.fow-logo{filter:drop-shadow(0 10px 22px rgba(0,0,0,.6));max-height:min(180px,22vh)!important;width:auto!important;align-self:center;margin-bottom:6px!important}.menu-content .tagline{margin-top:6px!important}
+.menu-content .tagline{text-shadow:0 2px 12px rgba(0,0,0,.5)}
+.fow-chemins{display:flex;gap:6px;flex-wrap:wrap;margin:-8px 0 20px}
+.fow-chemins span{display:flex;align-items:center;gap:5px;padding:5px 9px 5px 7px;border-radius:999px;background:rgba(242,184,75,.1);border:1px solid rgba(242,207,123,.3);font-size:13px}
+.fow-chemins b{font:600 10px var(--sans);letter-spacing:.4px;color:#f1e2bb}
+.difficulty button{border-radius:8px}
+.start-button{border-radius:10px;box-shadow:0 10px 26px rgba(201,150,60,.28)}
+.start-button:not([disabled]):hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(201,150,60,.4)}
+.map-title{right:5%!important;bottom:15%!important}
+.map-title h2{text-shadow:0 4px 22px rgba(0,0,0,.6),0 0 40px rgba(242,184,75,.15)}
+#fow-survol-lieu:before{content:"📍 ";font-style:normal}
+#fow-survol-lieu{transition:opacity .4s}
+@media(max-width:900px),(max-height:550px){.menu-content{padding:14px 16px 12px!important;border-radius:10px}.fow-chemins{margin:-4px 0 10px;gap:4px}.fow-chemins span{padding:3px 6px;font-size:10px}.fow-chemins b{font-size:7px}}
+</style>
 </head>
 <body>
   <canvas id="world" aria-label="Carte stratégique de Campawood, utilisez la souris ou les commandes tactiles."></canvas>
   <div class="vignette" aria-hidden="true"></div>
 
   <section id="menu" class="menu-screen">
-    <header class="menu-header"><div class="club-mark"><span class="small-crest">F</span><span>LES SALES FILS<span class="club-sub">PRÉSENTENT</span></span></div><span class="version-tag"><i></i> BÊTA DU CLUB · V0.3</span></header>
+    <header class="menu-header"><div class="club-mark"><span class="small-crest">F</span><span>LES SALES FILS<span class="club-sub">PRÉSENTENT</span></span></div><span class="version-tag"><i></i> BÊTA DU CLUB · V0.4</span></header>
     <div class="menu-content">
       <div class="ornament"><span></span><b>LES QUERELLES DE BUVETTE ONT ASSEZ DURÉ</b><span></span></div>
       <img class="fow-logo" src="logo.webp" alt="Fils of War"><div class="wordmark" role="img" aria-label="Fils of War"><span class="fils">FILS</span><div class="of-war"><i></i><span>OF</span><i></i></div><span class="war">WAR</span></div>
       <p class="tagline">Bâtis ton royaume.<br>Protège tes filsous.</p>
-      <p class="menu-description">Un colon. Un territoire 36 fois plus vaste.<br>Explore, chasse et fais grandir ta ville.</p>
+      <p class="menu-description">Un colon, une terre de l’Hérault, cinq âges : du campement de fortune à la fusée du Cap d’Agde.</p><div class="fow-chemins" aria-label="Les cinq façons de gagner"><span title="Abattre le cœur du camp rival">⚔️<b>Conquête</b></span><span title="12 000 points de culture">🎭<b>Culture</b></span><span title="Tenir Les Grands Buffets 3 minutes">🏛️<b>Merveille</b></span><span title="Faire décoller la fusée">🚀<b>Fusée</b></span><span title="Garder 15 000 filsous 3 minutes">💰<b>Trésor</b></span></div>
       <div class="difficulty" role="group" aria-label="Choisir la difficulté"><button data-difficulty="discovery" class="active" aria-pressed="true">EXPLORATION<span>Paix garantie tant que tu n’attaques pas</span></button><button data-difficulty="normal" aria-pressed="false">CONQUÊTE<span>La guerre fait partie du jeu</span></button></div>
       <label class="start-region-label" for="start-region"><span>TERRE D’ARRIVÉE<small>Tu choisiras ensuite où bâtir ton camp.</small></span><select id="start-region" aria-label="Choisir son secteur de départ"><option value="18">Secteur A4 · Sud-ouest</option></select></label>
       <button id="start" class="primary start-button" disabled><span data-icon="flag"></span><span id="start-label">PRÉPARATION DU ROYAUME…</span><span class="arrow">→</span></button>
       <div class="menu-secondary"><button id="menu-help"><span data-icon="book"></span>Comment jouer</button><button id="menu-sound"><span data-icon="sound"></span>Son activé</button></div>
       <div id="load-error" class="error-box" hidden></div>
     </div>
-    <div class="map-title"><div class="map-title-line"></div><span>01 / UN ROYAUME À EXPLORER</span><h2>CAMPAWOOD</h2><p>Les grandes terres du Salagou</p><div class="map-specs"><span>1 JOUEUR CONTRE IA</span><i>◆</i><span>24 SECTEURS</span><i>◆</i><span>CHASSE & RESSOURCES VIVANTES</span></div></div>
-    <footer class="menu-footer"><span>UN ROYAUME SE MÉRITE.</span><span>Économie · Conquête · Mauvaise foi</span><button id="menu-fullscreen" class="text-button">Plein écran <span data-icon="expand"></span></button></footer>
+    <div class="map-title"><div class="map-title-line"></div><span>01 / UN ROYAUME À EXPLORER</span><h2>CAMPAWOOD</h2><p>Du Salagou à la Méditerranée</p><div class="map-specs"><span>1 JOUEUR CONTRE IA</span><i>◆</i><span>5 ÂGES</span><i>◆</i><span>5 VICTOIRES</span><i>◆</i><span>COUPS DE LA FILSERIE</span></div></div>
+    <footer class="menu-footer"><span>UN ROYAUME SE MÉRITE.</span><span>Économie · Culture · Conquête · Mauvaise foi</span><button id="menu-fullscreen" class="text-button">Plein écran <span data-icon="expand"></span></button></footer>
   </section>
 
   <div id="hud" hidden>

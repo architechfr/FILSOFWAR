@@ -24,7 +24,61 @@
     }
     game.nodes.length=0;for(var j=0;j<garde.length;j++)game.nodes.push(garde[j]);
     game.fowFinitions={gisementsRetires:retires,bancs:poserBancs(game,api)};
+    try{game.fowFinitions.equilibre=equilibrer(game,api);}catch(e){game.fowFinitions.equilibreErreur=String(e);}
   };
+
+  // 20/10 soir : equite des deux moities de la carte. La mer mange une partie du sud-ouest :
+  // on rend au joueur du cote de la mer les gisements et les mines qui lui manquent.
+  function equilibrer(game,api){
+    var S=api.SECTORS||[];if(!S.length)return null;
+    var st=S[game.startRegion]||S[0],d=function(a,b){return Math.hypot(a.x-b.x,a.z-b.z);};
+    var op=S.slice().sort(function(a,b){return d(b,st)-d(a,st)||a.id-b.id;})[0],dep=[st,op];
+    function cote(x,z){return Math.hypot(x-st.x,z-st.z)<Math.hypot(x-op.x,z-op.z)?0:1;}
+    var T=[{wood:0,stone:0,gold:0},{wood:0,stone:0,gold:0}],mod={};
+    for(var i=0;i<game.nodes.length;i++){var n=game.nodes[i];if(!(n.type in T[0])||n.source==='fish')continue;T[cote(n.x,n.z)][n.type]+=n.amount;(mod[n.type]||(mod[n.type]=[])).push(n);}
+    function libre(x,z,marge){
+      if(x<16||z<16||x>752||z>752)return false;
+      if(api.terrainAt(x,z)!=='land'||G.isSea(x,z)||G.isBeach(x,z)||G.riverDist(x,z)<G.riverHalfWidth+8)return false;
+      for(var k=0;k<game.nodes.length;k++){var q=game.nodes[k],m=(q.radius||1)+(marge||6);if((q.x-x)*(q.x-x)+(q.z-z)*(q.z-z)<m*m)return false;}
+      for(var j=0;j<S.length;j++){if(Math.hypot(S[j].x-x,S[j].z-z)<14)return false;}
+      var V=game.villages||[];for(var v=0;v<V.length;v++)if(Math.hypot(V[v].x-x,V[v].z-z)<12)return false;
+      var SI=game.sites||[];for(var w=0;w<SI.length;w++)if(Math.hypot(SI[w].x-x,SI[w].z-z)<12)return false;
+      return true;
+    }
+    // candidats de la moitie deficitaire, dans un ordre pseudo-aleatoire mais fixe
+    function candidats(side,dmin,dmax){
+      var L=[];for(var x=20;x<750;x+=9)for(var z=20;z<750;z+=9){if(cote(x,z)!==side)continue;var dd=Math.hypot(x-dep[side].x,z-dep[side].z);if(dd<dmin||dd>dmax)continue;L.push({x:x,z:z,h:h32(x,z,(game.seed|0)^0xbeef)});}
+      L.sort(function(a,b){return a.h-b.h;});return L;
+    }
+    function secteur(x,z){var b=S[0],bd=1e9;for(var i=0;i<S.length;i++){var e=Math.hypot(x-S[i].x,z-S[i].z);if(e<bd){bd=e;b=S[i];}}return b.id;}
+    var rapport={};
+    ['wood','stone','gold'].forEach(function(t){
+      var a=T[0][t],b=T[1][t],side=a<b?0:1,ecart=Math.abs(a-b);
+      if(!mod[t]||ecart<.06*Math.max(a,b))return;
+      var ex=mod[t].slice().sort(function(p,q){return p.amount-q.amount;})[Math.floor(mod[t].length/2)];
+      var amt=ex.amount,rad=ex.radius||1.6,src=ex.source,besoin=Math.min(60,Math.ceil(ecart*.92/amt)),poses=0;
+      var C=candidats(side,60,340);
+      for(var c=0;c<C.length&&poses<besoin;c++){
+        var cx=C[c].x+(C[c].h-.5)*6,cz=C[c].z+((C[c].h*7)%1-.5)*6;if(!libre(cx,cz,7))continue;
+        // un petit filon de 2 ou 3 gisements, comme les autres
+        for(var k=0;k<3&&poses<besoin;k++){var ox=cx+(k===0?0:Math.cos(k*2.1+C[c].h*6)*3.4),oz=cz+(k===0?0:Math.sin(k*2.1+C[c].h*6)*3.4);if(k&&!libre(ox,oz,2.5))continue;
+          api.addNode(t,ox,oz,amt,rad,src,secteur(ox,oz));poses++;T[side][t]+=amt;}
+      }
+      rapport[t]={cote:side?'IA':'joueur',ajouts:poses};
+    });
+    // les mines (sites) : meme nombre de chaque cote
+    if(api.addSite){
+      var mines=[0,0];(game.sites||[]).forEach(function(s2){if(s2.site==='mine')mines[cote(s2.x,s2.z)]++;});
+      var noms=['Mine de Cabrières','Mine de Villeveyrac','Carrière de Paulhan'],ajout=0;
+      while(mines[0]!==mines[1]&&ajout<3){
+        var sd=mines[0]<mines[1]?0:1,Cm=candidats(sd,120,320),fait=false;
+        for(var m2=0;m2<Cm.length;m2++){if(!libre(Cm[m2].x,Cm[m2].z,10))continue;var ok=true;(game.sites||[]).forEach(function(s3){if(Math.hypot(s3.x-Cm[m2].x,s3.z-Cm[m2].z)<60)ok=false;});if(!ok)continue;api.addSite('mine',Cm[m2].x,Cm[m2].z,noms[ajout%noms.length]);mines[sd]++;fait=true;break;}
+        ajout++;if(!fait)break;
+      }
+      rapport.mines=mines;
+    }
+    rapport.totaux=T;return rapport;
+  }
 
   // 20/10 : les bancs de poissons, au bord du fleuve, des lacs et de la mer.
   // On ne les peche qu'avec une cabane de pecheur toute proche.
