@@ -17,7 +17,8 @@
     for(var k in (p.tech||{}))if(p.tech[k])techs++;
     total=9;
     var merv=!mv?{t:p.age>=3?'à bâtir':'Âge III',r:0}:!mv.complete?{t:'chantier '+Math.round(mv.progress*100)+' %',r:mv.progress*.5}:{t:'debout '+fmt(V.merv)+' / 3:00',r:.5+V.merv/TENIR*.5};
-    var sci=!ob?{t:techs+' / '+total+' recherches',r:techs/total*.5}:!ob.complete?{t:'observatoire '+Math.round(ob.progress*100)+' %',r:.5+ob.progress*.2}:{t:'observation '+fmt(V.obs)+' / 2:30',r:.7+V.obs/OBSERVER*.3};
+    var cs=trouve('centrespatial'),fus=cs&&cs.research&&cs.research.kind==='labo:fusee'?cs.research:null;
+    var sci=fus?{t:'🚀 compte à rebours '+Math.round(fus.progress*100)+' %',r:.8+fus.progress*.2}:cs?{t:cs.complete?'centre spatial prêt':'centre spatial '+Math.round(cs.progress*100)+' %',r:.6+(cs.complete?.2:cs.progress*.2)}:{t:(['','Âge I','Âge II','Âge III','Âge IV','Âge V'][p.age]||'')+(ob&&ob.complete?' · observatoire':''),r:Math.min(.6,(p.age-1)*.12+(ob&&ob.complete?.1:0))};
     var tre=V.tresor>0?{t:'tenu '+fmt(V.tresor)+' / 3:00',r:.5+V.tresor/TENIR*.5}:{t:nb(p.resources.gold)+' / 15 000 ₣',r:Math.min(1,p.resources.gold/TRESOR)*.5};
     return {culture:{t:nb(V.culture)+' / 12 000 · +'+(V.cps||0).toFixed(1)+'/s',r:V.culture/CULTURE},merveille:merv,science:sci,tresor:tre,nom:p.name};
   }
@@ -49,7 +50,7 @@
     var moi=typeof F.me==='number'?F.me:0,lui=1-moi,a=etat(g,moi),b=etat(g,lui);
     corps.innerHTML='<h4>LES CHEMINS DE LA VICTOIRE</h4>'+
       ligne('🎭','Culture',a.culture,b.culture)+ligne('🏛️','Merveille',a.merveille,b.merveille)+
-      ligne('🔭','Science',a.science,b.science)+ligne('💰','Trésor',a.tresor,b.tresor)+
+      ligne('🚀','Technologie',a.science,b.science)+ligne('💰','Trésor',a.tresor,b.tresor)+
       '<small style="color:#9c957f">Et toujours la conquête : abattre le cœur du camp rival.</small>';
   }
   function demarrer(){construire();setInterval(maj,500);}
