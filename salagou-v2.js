@@ -131,9 +131,19 @@ function ruisseau(game,api,G,mask,protect){
   current=prev[current];
  }
  path.reverse();
+ // 20/10 : on lisse le trace (la recherche en grille faisait un angle droit).
+ var lisse=[];
+ for(var a=0;a<path.length;a++){
+  if(a<2||a>path.length-3){lisse.push(path[a]);continue;}
+  var sx2=0,sz2=0,nn=0;
+  for(var b2=Math.max(0,a-9);b2<=Math.min(path.length-1,a+9);b2++){sx2+=path[b2][0];sz2+=path[b2][1];nn++;}
+  var px=sx2/nn,pz=sz2/nn,kk=Math.floor(pz/2)*N+Math.floor(px/2);
+  lisse.push(libre(kk)||mask[kk]?[px,pz]:path[a]);
+ }
+ path=lisse;
  var source=orig[goal],sx=(source%N)*2+1,sz=Math.floor(source/N)*2+1;
  var circles=[[sx,sz,4.1]];
- for(var u=0;u<path.length;u+=2)circles.push([path[u][0],path[u][1],3.5]);
+ for(var u=0;u<path.length;u++)circles.push([path[u][0],path[u][1],3.4+0.5*Math.sin(u*0.37)]);
  var last=path[path.length-1];
  circles.push([last[0],last[1]+2.5,4.1]);
  var added=[],stamp=new Uint8Array(TOTAL),ok=true;
