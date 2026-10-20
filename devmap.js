@@ -58,6 +58,8 @@ function finir(){
  if(change){try{g._updatePopulation();g._updateFog();}catch(e){}}
 }
 function remplir(){
+ // 21/10 : dans le mode Clash, le bouton remplit le village Clash
+ if(window.FOW_CLASH_UI&&window.FOW_CLASH_UI.actif){window.FOW_CLASH_UI.dev('remplir');return;}
  var F=window.__FOW__,g=F&&F.game;if(!g||!g.players||!g.players[0])return;
  var r=g.players[0].resources;for(var k in r)if(Object.prototype.hasOwnProperty.call(r,k))r[k]+=1000;
  try{F.toast('Mode dev : +1000 de chaque ressource.','notice',2500);}catch(e){}
@@ -70,7 +72,7 @@ function bouton(txt,fn){var b=document.createElement('button');b.type='button';b
  b.style.cssText='background:#213a2eee;color:#f7e7b8;border:1px solid #b8a06b;border-radius:5px;padding:6px 9px;cursor:pointer;font:inherit';
  b.onclick=function(e){e.stopPropagation();fn(b);};panneau.appendChild(b);return b;}
 function libelle(b){b.textContent=instant?'⚡ Instantané : OUI':'⚡ Instantané : NON';b.style.opacity=instant?'1':'.65';}
-var bInst=bouton('',function(b){instant=!instant;libelle(b);if(instant)finir();});libelle(bInst);
+var bInst=bouton('',function(b){instant=!instant;libelle(b);if(window.FOW_CLASH)window.FOW_CLASH.reglages.instant=instant;if(instant)finir();});libelle(bInst);
 bouton('💰 +1000 de tout',remplir);
 document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(panneau)});
 })();
