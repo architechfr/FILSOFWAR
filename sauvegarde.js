@@ -23,7 +23,7 @@
   // Le diagnostic visuel revele toute la carte : ne pas melanger ces parties avec les sauvegardes normales.
   if(P.get('mode')==='reseau'||P.get('devmap')==='1')return;
   var CLE='fow.sauvegarde',TICK=0.05;
-  var METHODES=['order','train','placeBuilding','foundSettlement','upgradeSettlement','advanceAge','research','trade','rallyVillage','hater','fowLabo','fowCoup'];
+  var METHODES=['order','train','placeBuilding','foundSettlement','upgradeSettlement','advanceAge','research','trade','rallyVillage','hater','fowLabo','fowCoup','fowDiplo'];
   var NIVEAUX=['Nomade','Campement','Maison principale','Hôtel de ville'];
   var suivi=null;       // la partie en cours d'enregistrement
   var reprise=null;     // la sauvegarde qu'on est en train de rejouer
