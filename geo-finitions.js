@@ -78,11 +78,36 @@
       if(x<6||z<6||x>762||z>762)return false;
       if(G.isSea(x,z)||G.isBeach(x,z)||G.riverDist(x,z)<9)return false;
       var ix=Math.floor(x/2),iz=Math.floor(z/2);if(g.obstacles&&g.obstacles[iz*384+ix])return false;
-      var sec=window.__fowSecteursMoteur||[];for(var i=0;i<sec.length;i++){var dx=x-sec[i].x,dz=z-sec[i].z;if(dx*dx+dz*dz<(marge||30)*(marge||30))return false;}
+      var sec=window.__fowSecteursMoteur||[];for(var i=0;i<sec.length;i++){var dx=x-sec[i].x,dz=z-sec[i].z;if(dx*dx+dz*dz<(marge||40)*(marge||40))return false;}
       for(var j=0;j<g.nodes.length;j++){var n=g.nodes[j],ex=x-n.x,ez=z-n.z,m=(n.radius||1)+2;if(ex*ex+ez*ez<m*m)return false;}
       return true;
     }
+    out.vignes=out.vignes||[];out.vignesSol=out.vignesSol||[];out.cypres=out.cypres||[];out.parasolT=out.parasolT||[];out.parasolC=out.parasolC||[];
+    // 20/10 lot H : les pins parasols du littoral
+    var cote=G.coastZ?G.coastZ(cx):9999;
+    if(cz>cote-110&&cz<cote+10){
+      var np=3+Math.floor(r()*5);
+      for(var pp=0;pp<np;pp++){var px=x0+4+r()*56,pz=z0+4+r()*56;if(!libre(px,pz,44))continue;var ph=4.2+r()*2.4,py=carte.h(px,pz),pc=2+r()*1.2;
+        out.parasolT.push({x:px,y:py+ph*.36,z:pz,sx:.17,sy:ph*.72,sz:.17,rz:(r()-.5)*.25,rx:(r()-.5)*.25});
+        out.parasolC.push({x:px,y:py+ph*.78,z:pz,sx:pc,sy:.62+r()*.25,sz:pc*(.85+r()*.3),ry:r()*6.28});}
+    }
     var herbe=carte.herbe?carte.herbe(cx,cz,g):.6;if(herbe<.5)return; // causses et ruffes : leur propre decor
+    // 20/10 lot H : les vignes de Campagnan, en rangs, sur un sol de terre
+    if(r()<.34){
+      var vx=x0+10+r()*30,vz=z0+10+r()*30,va=r()<.5?0:Math.PI/2+(r()-.5)*.3,vL=14+r()*12,vW=10+r()*8,ux2=Math.cos(va),uz2=Math.sin(va),wx=-uz2,wz=ux2,rang=0,automne=r()<.5;
+      for(var off=0;off<=vW;off+=1.7,rang++){
+        var ok=0;
+        for(var dl=0;dl<=vL;dl+=1.05){var X=vx+ux2*dl+wx*off,Z=vz+uz2*dl+wz*off;if(!libre(X,Z,40))continue;var Y=carte.h(X,Z);ok++;
+          out.vignes.push({x:X,y:Y+.32,z:Z,sx:.42+r()*.12,sy:.38+r()*.1,sz:.42+r()*.12,ry:r()*6.28,jaune:automne&&r()<.45});}
+        if(ok>3){var mx=vx+ux2*vL/2+wx*off,mz=vz+uz2*vL/2+wz*off;out.vignesSol.push({x:mx,y:carte.h(mx,mz)+.03,z:mz,sx:1.05,sy:.05,sz:vL+1,ry:-va+Math.PI/2});}
+      }
+    }
+    // 20/10 lot H : les cypres, en alignement le long d'une haie ou pres d'un mas
+    if(r()<.4){
+      var ax2=x0+8+r()*48,az2=z0+8+r()*48,aa=r()*Math.PI,n2=2+Math.floor(r()*4);
+      for(var c2=0;c2<n2;c2++){var X2=ax2+Math.cos(aa)*c2*2.3,Z2=az2+Math.sin(aa)*c2*2.3;if(!libre(X2,Z2,40))continue;var hc=4.4+r()*2.4,Y2=carte.h(X2,Z2);
+        out.cypres.push({x:X2,y:Y2+hc/2,z:Z2,sx:.55+r()*.15,sy:hc,sz:.55+r()*.15});}
+    }
     // une ou deux haies, faites de buissons serres le long d'une ligne
     var nh=r()<.75?(r()<.4?2:1):0;
     for(var hh=0;hh<nh;hh++){
