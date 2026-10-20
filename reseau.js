@@ -27,7 +27,7 @@
   const MOI={id:String(P.get('uid')||'invite').slice(0,64)+':'+Math.random().toString(36).slice(2,8),
              nom:String(P.get('nom')||'Invité').slice(0,24)};
   const TICK=0.05,TOUR=5,DELAI=2,CONTROLE=40,SILENCE=15000;
-  const METHODES=['order','train','placeBuilding','foundSettlement','upgradeSettlement','advanceAge','research','trade','rallyVillage','hater','fowLabo','fowCoup','fowDiplo','placerMur','placerPorte','fowPorte','fowTour'];
+  const METHODES=['order','train','placeBuilding','foundSettlement','upgradeSettlement','advanceAge','research','trade','rallyVillage','hater','fowLabo','fowCoup','fowDiplo','placerMur','placerPorte','fowPorte','fowTour','fowDemolir'];
   const $=id=>document.getElementById(id);
   const fow=()=>window.__FOW__||null;
   const toast=(t,k,d)=>{try{fow()?.toast(t,k||'notice',d||4500);}catch{}};
