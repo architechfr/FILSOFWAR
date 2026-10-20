@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  var boite=null,corps=null,ouvert=false,bouton=null;
+  var boite=null,corps=null,ouvert=false,bouton=null,vuAtt=null;
   function F(){return window.__FOW__;}
   function moi(){var f=F();return f&&typeof f.me==='number'?f.me:0;}
   function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+('0'+s%60).slice(-2);}
@@ -35,7 +35,7 @@
     document.head.appendChild(st);
     boite=document.createElement('div');boite.id='fow-diplo';boite.className='dp-cache';
     bouton=document.createElement('button');bouton.type='button';bouton.textContent='🤝 Diplomatie';
-    bouton.onclick=function(e){e.stopPropagation();ouvert=!ouvert;corps.className=ouvert?'dp-corps':'dp-corps dp-cache';maj();};
+    bouton.onclick=function(e){e.stopPropagation();ouvert=!ouvert;var g0=F()&&F().game;if(ouvert&&g0)vuAtt=g0;corps.className=ouvert?'dp-corps':'dp-corps dp-cache';maj();};
     corps=document.createElement('div');corps.className='dp-corps dp-cache';
     corps.addEventListener('click',function(e){var b=e.target.closest('button[data-a]');if(b){e.stopPropagation();agir(b.getAttribute('data-a'));}});
     boite.appendChild(bouton);boite.appendChild(corps);document.body.appendChild(boite);var sc=document.querySelector('.session-controls');if(sc){bouton.innerHTML='🤝<span> Diplomatie</span>';bouton.classList.add('fow-top-btn');sc.insertBefore(bouton,sc.firstChild);}
@@ -46,7 +46,7 @@
     if(!g||!g.players||!g.fowDiplo||(hud&&hud.hidden)||(menu&&!menu.hidden)){boite.className='dp-cache';return;}
     boite.className='';
     var D=g._fowD?g._fowD():g.fowDiplo,o=moi(),p=g.players[o],offre=D.offre&&D.offre.pour===o?D.offre:null;
-    bouton.className='fow-top-btn'+(offre?' dp-alerte':'');
+    var att=g.fowAttaque&&g.fowAttaque[o]!=null&&vuAtt!==g;bouton.className='fow-top-btn'+(offre||att?' dp-alerte':'');bouton.title=att?'Les Barons t’ont attaqué : négocier ?':'Diplomatie et renseignements sur l’adversaire';
     if(!ouvert)return;
     var E={guerre:['⚔️ En guerre','Les Barons peuvent attaquer à tout moment.'],treve:['🕊️ Trêve','Encore '+fmt(D.fin-g.time)+' sans combat.'],pacte:['🤝 Pacte commercial','Vos marchands commercent entre vos villes. Personne n’attaque.'],paix:['🌿 Paix','Mode exploration : la paix tient tant que tu n’attaques pas.']}[D.etat]||['?',''];
     var H=humeur(D.relation),pos=Math.max(0,Math.min(100,(D.relation+100)/2));
@@ -60,6 +60,21 @@
       (D.etat==='guerre'?bt('treve','🕊️ Trêve 5 min',c+' ₣ exigés',or>=c&&D.relation>-50):bt('treve','🕊️ Trêve','déjà en paix',false))+
       bt('pacte','🤝 Pacte commercial','300 ₣ · relation ≥ 30',D.etat!=='guerre'&&D.etat!=='pacte'&&D.relation>=30&&or>=300)+
       bt('guerre','⚔️ Déclarer la guerre','rompt trêve et pacte',D.etat!=='guerre','dp-guerre')+'</div>';
+    // fiche de l'adversaire : ce que tes eclaireurs et tes marchands rapportent
+    var a=1-o,A=g.players[a];if(A){var VA=A.fowV||{},arm=g.units.filter(function(u){return u.owner===a&&u.hp>0&&['worker','marchand','illustre'].indexOf(u.type)<0;}).length,
+      est=arm<3?'presque rien':arm<8?'une petite troupe (~'+(Math.round(arm/2)*2)+')':arm<20?'une armée (~'+(Math.round(arm/5)*5)+')':'une grande armée (~'+(Math.round(arm/5)*5)+')',
+      villes=g.buildings.filter(function(b){return b.owner===a&&b.hp>0&&(b.type==='townhall'||b.type==='bastide');}).length,
+      mv=g.buildings.filter(function(b){return b.owner===a&&b.hp>0&&b.type==='merveille';})[0],
+      cs=g.buildings.filter(function(b){return b.owner===a&&b.hp>0&&b.type==='centrespatial';})[0],
+      cu=VA.fete?'🎉 en pleine Grande Fête ('+fmt(VA.fete.fin-g.time)+') : va la gâcher !':Math.round(Math.min(1,(VA.culture||0)/18000)*100)+' % du chemin',
+      AG=['','I','II','III','IV','V'];
+      html+='<div class="dp-com"><h4>👁️ RENSEIGNEMENTS : '+(A.name||'LES BARONS').toUpperCase()+'</h4>'+
+        '<small>Âge '+(AG[A.age]||'?')+' · '+villes+' ville'+(villes>1?'s':'')+' · '+(A.pop||0)+' habitants</small>'+
+        '<small>⚔️ Armée : '+est+'</small>'+
+        '<small>🎭 Culture : '+cu+'</small>'+
+        (mv?'<small>🏛️ Merveille '+(mv.complete?'debout !':'en chantier ('+Math.round(mv.progress*100)+' %)')+'</small>':'')+
+        (cs?'<small>🚀 Centre spatial '+(cs.complete?'prêt':'en chantier')+'</small>':'')+
+        (g.fowAttaque&&g.fowAttaque[o]!=null?'<small>Première attaque contre toi à '+fmt(g.fowAttaque[o])+'.</small>':'')+'</div>';}
     var M=g.units.filter(function(u){return u.owner===o&&u.type==='marchand'&&u.hp>0;}),routes=M.filter(function(u){return u.action==='commerce';}).length;
     html+='<div class="dp-com"><h4>ROUTES COMMERCIALES</h4><small>🐴 '+M.length+' marchand'+(M.length>1?'s':'')+' · '+routes+' sur la route · '+Math.round(p.fowCommerce||0)+' filsous gagnés</small><small>Forme-les à la Banque. Ils relient tes villes, tes hameaux alliés'+(D.etat==='pacte'?' et les villes des Barons (×1,6)':' et, avec un pacte, les villes des Barons')+'.</small></div>';
     if(corps.__h!==html){corps.__h=html;corps.innerHTML=html;}

@@ -27,7 +27,7 @@
     return;
   }
   var CLE='fow.sauvegarde',TICK=0.05;
-  var METHODES=['order','train','placeBuilding','foundSettlement','upgradeSettlement','advanceAge','research','trade','rallyVillage','hater','fowLabo','fowCoup','fowDiplo','placerMur','placerPorte','fowPorte','fowTour','fowDemolir'];
+  var METHODES=['order','train','placeBuilding','foundSettlement','upgradeSettlement','advanceAge','research','trade','rallyVillage','hater','fowLabo','fowCoup','fowDiplo','placerMur','placerPorte','fowPorte','fowTour','fowDemolir','fowContinuer'];
   var NIVEAUX=['Nomade','Campement','Maison principale','Hôtel de ville'],AGES=['','I','II','III','IV','V'];
   var suivi=null;       // la partie en cours d'enregistrement
   var reprise=null;     // la sauvegarde qu'on est en train de rejouer

@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  var CULTURE=12000,TRESOR=15000,TENIR=180,OBSERVER=150;
+  var CULTURE=18000,TRESOR=15000,TENIR=180,OBSERVER=150;
   var ouvert=false,boite=null,corps=null;
   function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+('0'+s%60).slice(-2);}
   function nb(n){return Math.floor(n).toLocaleString('fr-FR');}
@@ -20,7 +20,7 @@
     var cs=trouve('centrespatial'),fus=cs&&cs.research&&cs.research.kind==='labo:fusee'?cs.research:null;
     var sci=fus?{t:'🚀 compte à rebours '+Math.round(fus.progress*100)+' %',r:.8+fus.progress*.2}:cs?{t:cs.complete?'centre spatial prêt':'centre spatial '+Math.round(cs.progress*100)+' %',r:.6+(cs.complete?.2:cs.progress*.2)}:{t:(['','Âge I','Âge II','Âge III','Âge IV','Âge V'][p.age]||'')+(ob&&ob.complete?' · observatoire':''),r:Math.min(.6,(p.age-1)*.12+(ob&&ob.complete?.1:0))};
     var tre=V.tresor>0?{t:'tenu '+fmt(V.tresor)+' / 3:00',r:.5+V.tresor/TENIR*.5}:{t:nb(p.resources.gold)+' / 15 000 ₣',r:Math.min(1,p.resources.gold/TRESOR)*.5};
-    return {culture:{t:nb(V.culture)+' / 12 000 · +'+(V.cps||0).toFixed(1)+'/s · '+(V.nbIllustres||0)+' 🌟',r:V.culture/CULTURE},merveille:merv,science:sci,tresor:tre,nom:p.name};
+    var cul=V.fete?{t:'🎉 Grande Fête : encore '+fmt(Math.max(0,V.fete.fin-g.time)),r:1}:{t:nb(V.culture)+' / 18 000 · +'+(V.cps||0).toFixed(1)+'/s · '+(V.nbIllustres||0)+' 🌟',r:Math.min(1,V.culture/CULTURE)};if(g.fowLibre)cul.t='🏁 victoire acquise · '+cul.t;return {culture:cul,merveille:merv,science:sci,tresor:tre,nom:p.name};
   }
   function construire(){
     var st=document.createElement('style');

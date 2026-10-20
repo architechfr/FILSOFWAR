@@ -77,6 +77,15 @@
       }
       rapport.mines=mines;
     }
+    // 20/10 nuit : le bois manque partout. Deux bosquets denses (6 arbres, 3 000 de bois)
+    // pres de chaque depart, poses de la meme facon des deux cotes.
+    rapport.bosquets=[0,0];
+    for(var sb=0;sb<2;sb++){var Cb=candidats(sb,30,60),faits=[];
+      for(var cb=0;cb<Cb.length&&faits.length<2;cb++){var bx=Cb[cb].x,bz=Cb[cb].z;if(!libre(bx,bz,9))continue;
+        var loin=true;for(var f2=0;f2<faits.length;f2++)if(Math.hypot(faits[f2].x-bx,faits[f2].z-bz)<24)loin=false;if(!loin)continue;
+        faits.push({x:bx,z:bz});api.addNode('wood',bx,bz,500,1.8,'tree',secteur(bx,bz));
+        for(var a2=0;a2<5;a2++){var tx=bx+Math.cos(a2*1.2566+Cb[cb].h)*3.9,tz=bz+Math.sin(a2*1.2566+Cb[cb].h)*3.9;if(libre(tx,tz,1.2))api.addNode('wood',tx,tz,500,1.8,'tree',secteur(tx,tz));}
+        rapport.bosquets[sb]++;}}
     rapport.totaux=T;return rapport;
   }
 

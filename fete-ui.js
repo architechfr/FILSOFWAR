@@ -139,6 +139,17 @@
     var figs=div.querySelectorAll('.fe-album figure');
     for(var q=0;q<figs.length;q++)(function(fig){fig.onclick=function(){fig.classList.toggle('fe-zoom');};})(figs[q]);
     if(gagne)feuDArtifice(dlg);
+    // 20/10 : apres une victoire, on peut continuer a monter en puissance
+    var vieuxBt=document.getElementById('fe-continuer');if(vieuxBt)vieuxBt.parentNode.removeChild(vieuxBt);
+    if(gagne&&g.result.victoire&&g.fowContinuer&&!/mode=reseau/.test(location.search)){
+      var bc=document.createElement('button');bc.id='fe-continuer';bc.className='primary';bc.type='button';bc.innerHTML='CONTINUER LA PARTIE <span>▶</span>';
+      bc.onclick=function(){var r=g.fowContinuer(o);if(!r||!r.ok)return;
+        dlg.close();dlg.classList.remove('fe-large');
+        ['fe-fin','fe-feu','fe-continuer'].forEach(function(id){var e=document.getElementById(id);if(e&&e.parentNode)e.parentNode.removeChild(e);});
+        etat.fini=false;etat.fete=false;
+        if(f.toast)f.toast('La partie continue : la victoire est acquise, place à la gloire. Seule la conquête peut encore finir la partie.','notice');};
+      var pa=document.getElementById('play-again');if(pa&&pa.parentNode===dlg)dlg.insertBefore(bc,pa);else dlg.appendChild(bc);
+    }
   }
   function feuDArtifice(dlg){
     var c=document.createElement('canvas');c.id='fe-feu';dlg.insertBefore(c,dlg.firstChild);
